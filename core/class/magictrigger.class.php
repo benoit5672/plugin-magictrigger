@@ -28,26 +28,8 @@ class magictrigger extends eqLogic {
 
     /*************************************************************************
      * Cron functions, called automatically by Jeedom Core 
-     * We only implement the cron() and cronDaily() functions
+     * We only implement cronDaily() functions
      *************************************************************************/
-
-    /**
-     * Function called every minute by Jeedom
-     */
-    public static function cron() {
-        // Process each object of type magictrigger
-        foreach (self::byType('magictrigger') as $magictrigger) {
-            if ($magictrigger->getIsEnable() == 1) {
-                // the device is enabled
-                $cmd = $magictrigger->getCmd(null, 'refresh');
-                if (!is_object($cmd)) {
-                    // the refresh comment doesn't exist, go to next object
-                    continue; 
-                }
-                $cmd->execCmd(); 
-           }
-       }
-    }
 
     /**
      * Fonction exécutée automatiquement tous les jours par Jeedom
@@ -127,6 +109,53 @@ class magictrigger extends eqLogic {
         }
         $listener->save();
     }
+
+
+    /**
+     * Function used to build the cron arguments, based on the interval configuration
+     * parameters
+     * It also install the cron in jeedom
+     */
+    private function addCron() {
+
+        // Minutes
+        $interval = $this->getConfiguration('interval');
+        $minutes  = $interval % 60;
+        $cronStr  = ($minutes == 0) ? '0 ' : '*/' . $minutes . ' ';
+
+        // Hours
+        $hours    = intdiv($interval, 60);
+        $cronStr .= ($hours == 0) ? '* ' : '*/' . $hours . ' ';
+        $cronStr .= '* * ';
+        
+        //  Days of week
+        $days = array(0 => 'sunday', 1 => 'monday', 2 => 'tuesday', 3 => 'wednesday',
+                        4 => 'thursday', 5 => 'friday', 6 => 'saturday');
+        $dow  = '';
+        foreach ($days as $d => $day) {
+            if ($this->getConfiguration($day) == 1) {
+                if ($dow !== '') {
+                    $dow .= ',';
+                }
+                $dow .= $d;
+            }
+        }
+        $cronStr .= $dow;
+
+        log::add('magictrigger', 'debug', 'cron string = ' . $cronStr);
+
+		try {
+            new Cron\CronExpression($cronStr, new Cron\FieldFactory);
+        } catch (Exception $e) {
+            log:add('magictrigger', 'warning', 'Error creating cron');
+		}
+    }
+
+    /**
+     * Remove the cron installed for this instance
+     */
+    private function removeCron() {
+    }
 	
     /** 
      * Build the super condition
@@ -192,8 +221,8 @@ class magictrigger extends eqLogic {
      */
     private function checkEquipement() {
         
-        // Cron expression
-        if ($this->getConfiguration('autorefresh') !== '') {
+        // Interval
+        if ($this->getConfiguration('interval') !== '') {
 		    try {
                 new Cron\CronExpression($this->getConfiguration('autorefresh'), 
                                         new Cron\FieldFactory);
@@ -377,6 +406,9 @@ class magictrigger extends eqLogic {
      */
 	public function postUpdate() {
         log::add('magictrigger', 'debug', 'Entering postUpdate');
+    
+        // Set the cron
+        $this->addCron();
 
         // Build superCondition and store it in cache
         $this->setSuperCondition();
@@ -393,6 +425,9 @@ class magictrigger extends eqLogic {
 
         // Remove the listener, if any
         $this->removeListener();
+
+        // Remove the cron
+        $this->removeCron();
 	}
 
 	public function postRemove() {

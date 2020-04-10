@@ -13,7 +13,7 @@ $eqLogics = eqLogic::byType($plugin->getId());
     <legend><i class="fas fa-cog"></i>  {{Gestion}}</legend>
     <div class="eqLogicThumbnailContainer">
         <div class="cursor eqLogicAction" data-action="add" style="text-align: center; background-color : #ffffff; height : 120px;margin-bottom : 10px;padding : 5px;border-radius: 2px;width : 160px;margin-left : 10px;" >
-            <i class="fas fa-plus-circle" style="font-size : 6em;"></i>
+            <i class="fas fa-plus-circle" style="color: #3dadbb; font-size : 6em;"></i>
             <br>
             <span style="font-size : 1.1em;position:relative; top : 15px;word-break: break-all;white-space: pre-wrap;word-wrap: break-word;">{{Ajouter}}</span>
         </div>
@@ -111,14 +111,15 @@ $eqLogics = eqLogic::byType($plugin->getId());
 
                             <!- benoit5672: add configuration fields ->
                             <div class="form-group">
-                                <label class="col-sm-3 control-label">{{Auto-actualisation (cron)}}</label>
+                                <label class="col-sm-3 control-label help" data-help="{{Indique l'intervalle de temps pendant lequel sont compte les evenements.}}">{{Intervalle}}</label>
                                 <div class="col-sm-2">
-                                    <div class="input-group">
-                                        <input type="text" class="eqLogicAttr form-control" data-l1key="configuration" data-l2key="autorefresh" placeholder="{{Auto-actualisation (cron)}}"/>
-                                        <span class="input-group-btn">
-                                              <a class="btn btn-default btn-sm " id="bt_cronGenerator" ><i class="fas fa-question-circle"></i></a>
-                                        </span>
-                                    </div>
+                                    <select class="eqLogicAttr form-control" data-l1key="configuration" data-l2key="interval">
+                                        <option value="5">{{5 minutes}}</option>
+                                        <option value="10">{{10 minutes}}</option>
+                                        <option value="15" selected="selected">{{15 minutes}}</option>
+                                        <option value="30">{{30 minutes}}</option>
+                                        <option value="60">{{1 heure}}</option>
+                                    </select>
                                 </div>
                             </div>
                             <div class="form-group">
@@ -134,7 +135,7 @@ $eqLogics = eqLogic::byType($plugin->getId());
                                         <option value="0">{{Toujours}}</option>
                                         <option value="3">{{3 mois}}</option>
                                         <option value="6">{{6 mois}}</option>
-                                        <option value="12" selected>{{1 an}}</option>
+                                        <option value="12" selected="selected">{{1 an}}</option>
                                         <option value="24">{{2 ans}}</option>
                                         <option value="36">{{3 ans}}</option>
                                     </select>

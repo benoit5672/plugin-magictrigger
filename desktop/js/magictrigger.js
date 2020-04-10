@@ -116,17 +116,6 @@ function addCmdToTable(_cmd) {
 }
 
 /********************************************************************************/
-/**
- * fonction pour gerer la configuration du cron
- * ouvre une fenetre modal
- */
-$('#bt_cronGenerator').off('click').on('click',function(){
-    jeedom.getCronSelectModal({},function (result) {
-       $('.eqLogicAttr[data-l1key=configuration][data-l2key=autorefresh]').value(result.value);
-    });
-});
-
-/********************************************************************************/
 /*
  * table des actions
  * function addAction
