@@ -1,0 +1,34 @@
+{
+    "plugins\/magictrigger\/desktop\/php\/magictrigger.php": {
+        "Gestion": "Gestion",
+        "Ajouter": "Ajouter",
+        "Configuration": "Configuration",
+        "Documentation": "Documentation",
+        "Rechercher": "Rechercher",
+        "Expression": "Expression",
+        "Configuration avancée": "Configuration avancée",
+        "Supprimer": "Supprimer",
+        "Sauvegarder": "Sauvegarder",
+        "Equipement": "Equipement",
+        "Commandes": "Commandes",
+        "Nom de l'équipement": "Nom de l'équipement",
+        "Objet parent": "Objet parent",
+        "Aucun": "Aucun",
+        "Catégorie": "Catégorie",
+        "Activer": "Activer",
+        "Visible": "Visible",
+        "Condition": "Condition",
+        "Rechercher une commande": "Rechercher une commande",
+        "Commande de notification": "Commande de notification",
+        "Nom": "Nom",
+        "Options": "Options",
+        "Actions": "Actions"
+    },
+    "plugins\/magictrigger\/desktop\/js\/magictrigger.js": {
+        "Nom": "Nom",
+        "Historiser": "Historiser",
+        "Afficher": "Afficher",
+        "Tester": "Tester",
+        "Testeur d'expression": "Testeur d'expression"
+    }
+}

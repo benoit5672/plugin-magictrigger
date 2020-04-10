@@ -1,0 +1,34 @@
+{
+    "plugins\/magictrigger\/desktop\/php\/magictrigger.php": {
+        "Gestion": "Management",
+        "Ajouter": "Add",
+        "Configuration": "Setup",
+        "Documentation": "Documentation",
+        "Rechercher": "Search",
+        "Expression": "Expression",
+        "Configuration avancée": "Advanced configuration",
+        "Supprimer": "Delete",
+        "Sauvegarder": "Save",
+        "Equipement": "Device",
+        "Commandes": "Commands",
+        "Nom de l'équipement": "Device name",
+        "Objet parent": "Parent object",
+        "Aucun": "None",
+        "Catégorie": "Category",
+        "Activer": "Enable",
+        "Visible": "Visible",
+        "Condition": "Condition",
+        "Rechercher une commande": "Search command",
+        "Commande de notification": "Notification command",
+        "Nom": "Name",
+        "Options": "Options",
+        "Actions": "Actions"
+    },
+    "plugins\/magictrigger\/desktop\/js\/magictrigger.js": {
+        "Nom": "Name",
+        "Historiser": "Historize",
+        "Afficher": "Display",
+        "Tester": "Test",
+        "Testeur d'expression": "Expression tester"
+    }
+}
