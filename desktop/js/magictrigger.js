@@ -71,49 +71,42 @@ function printEqLogic(_eqLogic) {
 /*
  * Fonction pour l'ajout de commande, appellé automatiquement par plugin.template
  */
-
 function addCmdToTable(_cmd) {
     if (!isset(_cmd)) {
         var _cmd = {configuration: {}};
     }
-    if (!isset(_cmd.configuration)) {
-        _cmd.configuration = {};
-    }
     var tr = '<tr class="cmd" data-cmd_id="' + init(_cmd.id) + '">';
-
     tr += '<td>';
+    tr += '<input class="cmdAttr form-control input-sm" data-l1key="id" style="display : none;">';
+    tr += '<input class="cmdAttr form-control input-sm" data-l1key="type" style="display : none;">';
+    tr += '<input class="cmdAttr form-control input-sm" data-l1key="subType" style="display : none;">';
     tr += '<div class="row">';
-    tr += '<span class="cmdAttr" data-l1key="id" style="display:none;"></span>';
-    tr += '<input class="cmdAttr form-control" data-l1key="type" value="action" style="display : none;">';
-    tr += '<input class="cmdAttr form-control" data-l1key="subType" value="message" style="display : none;">';
-    tr += '<div class="col-sm-3">';
-    tr += '<a class="cmdAction btn btn-default btn-sm" data-l1key="chooseIcon"><i class="fas fa-flag"></i> Icône</a>';
+    tr += '<div class="col-sm-6">';
+    tr += '<a class="cmdAction btn btn-default btn-sm" data-l1key="chooseIcon"><i class="fa fa-flag"></i> Icone</a>';
     tr += '<span class="cmdAttr" data-l1key="display" data-l2key="icon" style="margin-left : 10px;"></span>';
     tr += '</div>';
     tr += '<div class="col-sm-6">';
-    tr += '<input class="cmdAttr form-control input-sm" data-l1key="name" style="width : 200px;" placeholder="{{Nom}}">';
+    tr += '<input class="cmdAttr form-control input-sm" data-l1key="name">';
     tr += '</div>';
     tr += '</div>';
     tr += '</td>';
-
     tr += '<td>';
-    tr += '<span><label class="checkbox-inline"><input type="checkbox" class="cmdAttr checkbox-inline" data-l1key="isHistorized" checked/>{{Historiser}}</label></span> ';
-    tr += '<span><input type="checkbox" class="cmdAttr checkbox-inline" data-l1key="isVisible" /> {{Afficher}}<br/></span>';
+    tr += '<span><label class="checkbox-inline"><input type="checkbox" class="cmdAttr" data-l1key="isVisible" checked/>{{Afficher}}</label></span> ';
     tr += '</td>';
-
     tr += '<td>';
     if (is_numeric(_cmd.id)) {
-        tr += '<a class="btn btn-default btn-xs cmdAction" data-action="configure"><i class="fas fa-cogs"></i></a> ';
-        tr += '<a class="btn btn-default btn-xs cmdAction" data-action="test"><i class="fas fa-rss"></i> {{Tester}}</a>';
+        tr += '<a class="btn btn-default btn-xs cmdAction expertModeVisible" data-action="configure"><i class="fa fa-cogs"></i></a> ';
+        tr += '<a class="btn btn-default btn-xs cmdAction" data-action="test"><i class="fa fa-rss"></i> {{Tester}}</a>';
     }
-    tr += '<i class="fas fa-minus-circle pull-right cmdAction cursor" data-action="remove"></i>';
     tr += '</td>';
-
     tr += '</tr>';
-
     $('#table_cmd tbody').append(tr);
     $('#table_cmd tbody tr:last').setValues(_cmd, '.cmdAttr');
+    jeedom.cmd.changeType($('#table_cmd tbody tr:last'), init(_cmd.subType));
 }
+
+$("#table_cmd").sortable({axis: "y", cursor: "move", items: ".cmd", placeholder: "ui-state-highlight", tolerance: "intersect", forcePlaceholderSize: true});
+
 
 /********************************************************************************/
 /*
@@ -297,15 +290,15 @@ $("a[href='#monitoringtab']").on('show.bs.tab', function(e) {
 	    full = root.find('#' + day + 'Full');
             full.show();
 	    if (full.find('.eqLogicAttr[data-l1key=configuration][data-l2key=' + day + 'Full]').value() == 0) {
-                root.find('#' + day + 'Begin').show();
+                root.find('#' + day + 'Start').show();
                 root.find('#' + day + 'End').show();
             } else {
-                root.find('#' + day + 'Begin').hide();
+                root.find('#' + day + 'Start').hide();
                 root.find('#' + day + 'End').hide();
 	    }
         } else {
             root.find('#' + day + 'Full').hide();
-            root.find('#' + day + 'Begin').hide();
+            root.find('#' + day + 'Start').hide();
             root.find('#' + day + 'End').hide();
         }
     });
@@ -333,15 +326,15 @@ $('body').off('click','.daySelection').on('click','.daySelection',function (even
 	full = root.find('#' + day + 'Full');
         full.show();
 	if (full.find('.eqLogicAttr[data-l1key=configuration][data-l2key=' + day + 'Full]').value() == 0) {
-            root.find('#' + day + 'Begin').show();
+            root.find('#' + day + 'Start').show();
             root.find('#' + day + 'End').show();
         } else {
-            root.find('#' + day + 'Begin').hide();
+            root.find('#' + day + 'Start').hide();
             root.find('#' + day + 'End').hide();
 	}
     } else {
         root.find('#' + day + 'Full').hide();
-        root.find('#' + day + 'Begin').hide();
+        root.find('#' + day + 'Start').hide();
         root.find('#' + day + 'End').hide();
     }
 });
@@ -352,10 +345,10 @@ $('body').off('click','.dayFull').on('click','.dayFull',function (event) {
     var root = $(this).closest('.form-group');
     var day = root.attr('id');
     if ($(this).value() == 1){
-        root.find('#' + day + 'Begin').hide();
+        root.find('#' + day + 'Start').hide();
         root.find('#' + day + 'End').hide();
     } else {
-        root.find('#' + day + 'Begin').show();
+        root.find('#' + day + 'Start').show();
         root.find('#' + day + 'End').show();
     }
 });
@@ -381,3 +374,8 @@ $('body').off('click','.vacation').on('click','.vacation',function (event) {
 });
 
 
+/*********************************************************************************************/
+$('.bt_showExpressionTest').off('click').on('click', function () {
+    $('#md_modal').dialog({title: "{{Testeur d'expression}}"});
+    $("#md_modal").load('index.php?v=d&modal=expression.test').dialog('open');
+});

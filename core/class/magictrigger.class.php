@@ -18,10 +18,13 @@
 
 /* * ***************************Includes********************************* */
 require_once __DIR__  . '/../../../../core/php/core.inc.php';
+require_once __DIR__  . '/magictriggerEvent.class.php';
 
 class magictrigger extends eqLogic {
 
 	/*     * *************************Attributs****************************** */
+    public static $days = array(0 => 'sunday', 1 => 'monday', 2 => 'tuesday', 
+        3 => 'wednesday', 4 => 'thursday', 5 => 'friday', 6 => 'saturday');
 	
 	/*     * ***********************Methode static*************************** */
 	
@@ -32,30 +35,60 @@ class magictrigger extends eqLogic {
      *************************************************************************/
 
     /**
-     * Fonction exécutée automatiquement tous les jours par Jeedom
-     *
-     public static function cronDaily() {
-         // @todo: remove entries based on the retention parameter
-         //
-         // @todo: count the number of trigger in the period of the day
-         // and keep it in cache
-     }
+     * Function executed every 5 minutes by jeedom (plugin)
      */
-
-    
+    public static function cron5() {
+        //log::add('magictrigger' , 'debug', 'cron5');
+    	foreach (self::byType(__CLASS__) as $magic) {
+            if (is_object($magic) && $magic->getIsEnable() == 1) {
+                try {
+                    $cr = $magic->getCache('cron', '');
+                    if ($cr === '') {
+                        // cache has been cleared, rebuild the cache
+                        $magic->populateCache();
+                        $cr = $magic->getCache('cron', '');
+                    }
+                    $cron = new Cron\CronExpression($cr, new Cron\FieldFactory);
+                    log::add('magictrigger', 'debug', $magic->getHumanName() . ' isDue(' . $magic->getCache('cron') . ') = ' . $cron->isDue());
+				    if ($cron->isDue()) {
+				        try {
+							$magic->cronNotification($magic);
+						} catch (Exception $e) {
+							log::add('magictrigger', 'error', __('Erreur pour ', __FILE__) . $magic->getHumanName() . ' : ' . $e->getMessage());
+						}
+					}
+				} catch (Exception $e) {
+					log::add('magictrigger', 'error', __('Expression cron non valide pour ', __FILE__) . $magic->getHumanName() . ' : ' . $magic->getCache('cron'));
+				}
+			}
+		}
+    }
 
     /**
-     * Function that is automatically called by the Listener class, when 
-     * a monitored value has changed
+     * Function executed every day by jeedom (plugin)
      */
-	public static function trigger($_option) {
-        log::add('magictrigger' , 'debug', 'trigger');
+     public static function cronDaily() {
 
-		$eqLogic = self::byId($_option['id']);
-		if (is_object($eqLogic) && $eqLogic->getIsEnable() == 1) {
-			$eqLogic->triggerIndication();
-		}
-	}
+        foreach (eqLogic::byType(__CLASS__, true) as $magic) {
+            // @todo: remove entries based on the retention parameter
+         
+            // Refresh the data
+            $magic->getInformation(); 
+        }
+     }
+
+    /**
+     * Function call by the plugin core object when the plugin is started
+     */
+    public static function start() {
+        foreach (eqLogic::byType(__CLASS__, true) as $magic) {
+            $magic->getInformation();
+        }
+    }
+
+    public function postAjax() {
+        //$this->getInformation();
+    }    
 
   	/*     * *********************Methode d'instance************************* */
 
@@ -68,7 +101,7 @@ class magictrigger extends eqLogic {
      * - addListener
      */
     private function getListener() {
-		return listener::byClassAndFunction(__CLASS__, 'trigger', array('id' => $this->getId()));
+		return listener::byClassAndFunction(__CLASS__, 'triggerCallback', array('id' => $this->getId()));
 	}
 
 	private function removeListener() {
@@ -76,8 +109,8 @@ class magictrigger extends eqLogic {
 
         $listener = $this->getListener();
 		if (is_object($listener)) {
-			$listener->remove();
-		}
+		   $listener->remove();
+        }
 	}
 
 	private function addListener() {
@@ -94,14 +127,14 @@ class magictrigger extends eqLogic {
 		if (!is_object($listener)) {
 			$listener = new listener();
 			$listener->setClass(__CLASS__);
-			$listener->setFunction('trigger');
+			$listener->setFunction('triggerCallback');
 			$listener->setOption(array('id' => $this->getId()));
 		}
 		$listener->emptyEvent();
 
         $triggers = $this->getConfiguration('triggers');
         foreach ($triggers as $trigger) {
-            $cmd = cmd::byId($trigger['cmd']);
+            $cmd = cmd::byId(str_replace('#', '', $trigger['cmd']));
             if (!is_object($cmd)) {
                 continue;
             }
@@ -112,27 +145,25 @@ class magictrigger extends eqLogic {
 
 
     /**
-     * Function used to build the cron arguments, based on the interval configuration
+     * Function used to build the cron arguments, based on the autorefresh configuration
      * parameters
-     * It also install the cron in jeedom
+     * set the result in cache
      */
-    private function addCron() {
+    private function setCron() {
 
         // Minutes
-        $interval = $this->getConfiguration('interval');
-        $minutes  = $interval % 60;
+        $refresh  = $this->getConfiguration('autorefresh');
+        $minutes  = $refresh % 60;
         $cronStr  = ($minutes == 0) ? '0 ' : '*/' . $minutes . ' ';
 
         // Hours
-        $hours    = intdiv($interval, 60);
+        $hours    = intdiv($refresh, 60);
         $cronStr .= ($hours == 0) ? '* ' : '*/' . $hours . ' ';
         $cronStr .= '* * ';
         
         //  Days of week
-        $days = array(0 => 'sunday', 1 => 'monday', 2 => 'tuesday', 3 => 'wednesday',
-                        4 => 'thursday', 5 => 'friday', 6 => 'saturday');
         $dow  = '';
-        foreach ($days as $d => $day) {
+        foreach (magictrigger::$days as $d => $day) {
             if ($this->getConfiguration($day) == 1) {
                 if ($dow !== '') {
                     $dow .= ',';
@@ -142,20 +173,11 @@ class magictrigger extends eqLogic {
         }
         $cronStr .= $dow;
 
+        $cronStr = checkAndFixCron($cronStr);
         log::add('magictrigger', 'debug', 'cron string = ' . $cronStr);
-
-		try {
-            new Cron\CronExpression($cronStr, new Cron\FieldFactory);
-        } catch (Exception $e) {
-            log:add('magictrigger', 'warning', 'Error creating cron');
-		}
+        $this->setCache('cron', $cronStr);
     }
 
-    /**
-     * Remove the cron installed for this instance
-     */
-    private function removeCron() {
-    }
 	
     /** 
      * Build the super condition
@@ -178,22 +200,20 @@ class magictrigger extends eqLogic {
             }
             $condition .= '(' . $this->getConfiguration('vacationInfo') . ' == 0)';
         }
-        $days = array(0 => 'sunday', 1 => 'monday', 2 => 'tuesday', 3 => 'wednesday', 
-                        4 => 'thursday', 5 => 'friday', 6 => 'saturday');
         if ($condition !== '') {
             $condition .= ' && ';
         }
         $daysCond = '';
-        foreach ($days as $d => $day) {
+        foreach (magictrigger::$days as $d => $day) {
             if ($this->getConfiguration($day) == 1) {
                 if ($daysCond !== '') {
                     $daysCond .= ' || ';
                 }
                 $daysCond .= '(#njour# == ' . $d;
                 if ($this->getConfiguration($day . 'Full') == 0) {
-                    $begin = intval(ltrim(str_replace(':', '', $this->getConfiguration($day . 'Begin')), '0'));
+                    $start = intval(ltrim(str_replace(':', '', $this->getConfiguration($day . 'Start')), '0'));
                     $end   = intval(ltrim(str_replace(':', '', $this->getConfiguration($day . 'End')), '0'));
-                    $daysCond .= ' && #time# > ' . $begin . ' && #time# < ' . $end;
+                    $daysCond .= ' && #time# > ' . $start . ' && #time# < ' . $end;
                 }
                 $daysCond .= ')';
             }
@@ -222,14 +242,16 @@ class magictrigger extends eqLogic {
     private function checkEquipement() {
         
         // Interval
+        /**
         if ($this->getConfiguration('interval') !== '') {
 		    try {
-                new Cron\CronExpression($this->getConfiguration('autorefresh'), 
+                new Cron\CronExpression($this->getConfiguration('interval'), 
                                         new Cron\FieldFactory);
 			} catch (Exception $e) {
                 throw new Exception(__('Merci d\'utiliser un format de cron valide.',__FILE__));
 			}
         }
+         */
 
         // timeOffset [0..120]
         $timeOffset = $this->getConfiguration('timeOffset');
@@ -253,17 +275,16 @@ class magictrigger extends eqLogic {
      */
     private function checkMonitoring() { 
 
-        // We check that at least one day is checked, and that either Full day, or Begin and End time are 
+        // We check that at least one day is checked, and that either Full day, or Start and End time are 
         // filled.
-        $days = array('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday');
         $nbDays = 0;
-        foreach ($days as $day) {
+        foreach (magictrigger::$days as $k => $day) {
             if ($this->getConfiguration($day) == 1) {
                 $nbDays += 1;
                 if ($this->getConfiguration($day . 'Full') == 0
-                    && ($this->getConfiguration($day . 'Begin') === ''
+                    && ($this->getConfiguration($day . 'Start') === ''
                     || $this->getConfiguration($day . 'End') === ''
-                    || intval(ltrim(str_replace(':', '', $this->getConfiguration($day . 'Begin')), '0')) >= intval(ltrim(str_replace(':', '', $this->getConfiguration($day . 'End')), '0')))) {
+                    || intval(ltrim(str_replace(':', '', $this->getConfiguration($day . 'Start')), '0')) >= intval(ltrim(str_replace(':', '', $this->getConfiguration($day . 'End')), '0')))) {
                     throw new Exception(__($day . ' est coche. Merci de renseigner soit le champ \'Toute la journee\' ou les champs \'debut\' et \'fin\' (l\'heure de fin doit etre apres l\'heure de debut).',__FILE__));
                 }
             }
@@ -328,29 +349,180 @@ class magictrigger extends eqLogic {
         }
     }
 
+    /** 
+     * Function used to create all the commands in the eqLogic object
+     * We create one command per day of week, which will contain the total
+     * of events for the day
+     */
+	private function createCommands() {
+
+        $order = 1;
+		$cmd = $this->getCmd(null, 'refresh');
+		if (!is_object($cmd)) {
+			$cmd = new magictriggerCmd();
+			$cmd->setLogicalId('refresh');
+			$cmd->setIsVisible(1);
+			$cmd->setName(__('Rafraichir', __FILE__));
+            $cmd->setOrder($order++);
+        }
+		$cmd->setEqLogic_id($this->getId());
+		$cmd->setType('action');
+		$cmd->setSubType('other');
+        $cmd->save();
+
+        foreach (magictrigger::$days as $k => $day) {
+		    $cmd = $this->getCmd(null, 'total' . $k);
+		    if (!is_object($cmd)) {
+			    $cmd = new magictriggerCmd();
+			    $cmd->setLogicalId('total' . $k);
+			    $cmd->setIsVisible(1);
+			    $cmd->setName(__('total ' . ucfirst($day), __FILE__));
+			    $cmd->setType('info');
+			    $cmd->setSubType('numeric');
+			    $cmd->setEqLogic_id($this->getId());
+                $cmd->setOrder($order++);
+			    $cmd->save();
+			    $this->checkAndUpdateCmd('total' . $k, 0);
+		    }
+        }
+    }
+
     /*************************************************************************
 
     /**
-     * triggerIndication
+     * Function that is automatically called by the Listener class, when 
+     * a monitored value has changed
+     */
+	public function triggerCallback($_option) {
+        //log::add('magictrigger' , 'debug', 'triggerCallback');
+
+        $magic = self::byId($_option['id']);
+        if (is_object($magic) && $magic->getIsEnable() == 1) {
+		    $magic->triggerNotification();
+		}
+	}
+
+    /**
+     * triggerNotification
      * Used to process the incoming trigger, that has been raised through the
      * listener class
      */
-    public function triggerIndication() {
-	    log::add('magictrigger', 'debug', 'triggerIndication(' . $this->getName() . ')');
+    public function triggerNotification() {
+	    //log::add('magictrigger', 'debug', 'triggerNotification(' . $this->getHumanName() . ')');
 
         $superCondition = $this->getCache('superCondition', '');
+        if ($superCondition === '') {
+            // Cache has been cleared, rebuild the superCondition
+            $this->populateCache();
+            $superCondition = $this->getCache('superCondition', '');
+        }
         if (jeedom::evaluateExpression($superCondition) == 0) {
 
-            log::add('magictrigger', 'debug', $superCondition . ' returns false');
+            log::add('magictrigger', 'debug', 'triggerNotification(' . $this->getHumanName() . ') = '
+                .$superCondition . ' returns false');
+            return;
+        }
+        log::add('magictrigger', 'debug', 'triggerNotification(' . $this->getHumanName() . ') = ' 
+                . $superCondition . ' returns true');
+
+        // Insert a new event in the database
+        $dow = date('w');
+        $mte = new magictriggerEvent(array('magicId' => $this->getId(), 'dow' => $dow, 
+                                            'time' => intval(date('Hi'))));
+        log::add('magictrigger', 'debug', 'MTE = ' . $mte->getMagicId() . ', dow=' 
+                    . $mte->getDayOfWeek() . ', time=' . $mte->getTime());
+        $mte->save();
+
+        // @todo: Update the list in memory, increase the total of event for the day
+        $cmd = $this->getCmd(null, 'total' . $dow);
+        if (!is_object($cmd)) {
+            log:add('magictrigger', 'error', __('Erreur jour: ' . $dow . ' n\'a pas de commande.', __FILE__));
+        }
+        $this->checkAndUpdateCmd('total' . $dow, ($cmd->execCmd() + 1));
+    } 
+
+
+    /**
+     * cronNotification
+     * Used to process incoming cron task, that have been raised depending on the 'interval'
+     * parameter 
+     */
+    public function cronNotification($magic) {
+
+	    log::add('magictrigger', 'debug', 'cronNotification(' . $magic->getHumanName() . ')');
+
+        // @todo: check remaining days for learning
+        // @todo: check actionCondition 
+
+        // Calculate the start and end date we are looking in the DB
+        $start = time() + $magic->getConfiguration('timeOffset'); 
+        $end   = $start + $magic->getConfiguration('interval');
+
+        // @todo fetch from DB
+        //
+        // @todo: algorithm to evaluate the probability of the event to occur
+        // - ppi = count(day) / 24 * (60/interval)
+        // - ((count(interval+offset) / count(day)) / ppi) * 100
+    }
+
+
+    /**
+     * Function used to populate the cache
+     */
+    public function populateCache() {
+
+        // Build superCondition and store it in cache
+        $this->setSuperCondition();
+
+        // Set the cron
+        $this->setCron();
+    }
+
+
+    /**
+     * Get the information from the database, and populate the different fields
+     */
+    public function getInformation() {
+		log::add('magictrigger', 'debug', 'Entering getInformation for ' . $this->getHumanName());
+
+        // Load the totals per day from the Database
+        $totals = magictriggerEvent::byIdTotalPerDow($this->getId());
+        //log::add('magictrigger', 'debug', '$totals -> '. print_r($totals));
+        if (!is_array($totals)) {
+            log::add('magictrigger', 'error', __('getInformation: Erreur database requete 1', __FILE__));
             return;
         }
 
-        // Insert a plot into the database
+        // Update the total for each day of week, but first, reset all the values to 0
         // @todo
-        // addPlot(time(), $this->getId(), date('w'), intval(ltrim(date('Hi')), '0'));
-        //
-    } 
+        //foreach (magictrigger::$days as $k => $day) {
+        //}
+        
+        foreach ($totals as $total) {
+            $dow = $total->getDayOfWeek();
+            $cmd = $this->getCmd(null, 'total' . $dow);
+            if (!is_object($cmd)) {
+                continue;
+            }
+            log::add('magictrigger', 'debug', 'update total' . $dow . ' to ' . $total->getCount());
+            $this->checkAndUpdateCmd('total' . $dow, $total->getCount());
+        }
 
+        // @toto: load the events for the current day
+    }
+
+
+    /**
+     * Function use by eqLogic class to refresh the data object
+     * We reload:
+     * - the total per dow of week
+     * - the events for the day
+     */
+    public function refresh($_force = false) {
+
+        $this->getInformation();
+		$this->refreshWidget();
+	}
 
     /**************************************************************************
      * Object management functions, used to validate, create, remove, and save
@@ -363,28 +535,30 @@ class magictrigger extends eqLogic {
 	public function preInsert() {
         log::add('magictrigger', 'debug', 'Entering preInsert');
 
-        $this->setConfiguration('autorefresh', '*/5 * * * *');
+        $this->setConfiguration('autorefresh', 5);
+        $this->setConfiguration('interval', 15);
         $this->setConfiguration('timeOffset', 30);
         $this->setConfiguration('learning', 4);
+        $this->setConfiguration('remaining', 4);
 	}
 
-    /**
-     * Use to create all the commands
-     */
 	public function postInsert() {
         log::add('magictrigger', 'debug', 'Entering postInsert');
 
-        // @todo: create commands
 	}
 
 	public function preSave() {
         log::add('magictrigger', 'debug', 'Entering preSave');
 	}
 
+    /**
+     * Use to create all the commands
+     */
 	public function postSave() {
         log::add('magictrigger', 'debug', 'Entering postSave');
 
-        // @todo: See alarm plugin
+        $this->createCommands();
+        $this->getInformation();
 	}
 
     /** Used to validate all the configurations parameters
@@ -407,11 +581,8 @@ class magictrigger extends eqLogic {
 	public function postUpdate() {
         log::add('magictrigger', 'debug', 'Entering postUpdate');
     
-        // Set the cron
-        $this->addCron();
-
-        // Build superCondition and store it in cache
-        $this->setSuperCondition();
+        // populate the cache
+        $this->populateCache();
 
         // Register the listener !
         $this->addListener();
@@ -426,8 +597,8 @@ class magictrigger extends eqLogic {
         // Remove the listener, if any
         $this->removeListener();
 
-        // Remove the cron
-        $this->removeCron();
+        // We remove all the events associated to the ID from the DB
+        magictriggerEvent::removeAllbyId($this->getId());
 	}
 
 	public function postRemove() {
@@ -442,5 +613,12 @@ class magictriggerCmd extends cmd {
 	}
 
 	public function execute($_options = array()) {
+        $magic = $this->getEqLogic(); 
+		switch ($this->getLogicalId()) { 
+			case 'refresh': 
+                $magic->refresh();
+                break;
+        }
 	}
 }
+

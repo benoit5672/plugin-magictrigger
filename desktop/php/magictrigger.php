@@ -111,6 +111,18 @@ $eqLogics = eqLogic::byType($plugin->getId());
 
                             <!- benoit5672: add configuration fields ->
                             <div class="form-group">
+                                <label class="col-sm-3 control-label help" data-help="{{Indique la periodicite de verification des conditions.}}">{{Periodicite}}</label>
+                                <div class="col-sm-2">
+                                    <select class="eqLogicAttr form-control" data-l1key="configuration" data-l2key="autorefresh">
+                                        <option value="5">{{5 minutes}}</option>
+                                        <option value="10">{{10 minutes}}</option>
+                                        <option value="15" selected="selected">{{15 minutes}}</option>
+                                        <option value="30">{{30 minutes}}</option>
+                                        <option value="60">{{1 heure}}</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
                                 <label class="col-sm-3 control-label help" data-help="{{Indique l'intervalle de temps pendant lequel sont compte les evenements.}}">{{Intervalle}}</label>
                                 <div class="col-sm-2">
                                     <select class="eqLogicAttr form-control" data-l1key="configuration" data-l2key="interval">
@@ -123,13 +135,13 @@ $eqLogics = eqLogic::byType($plugin->getId());
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label class="col-sm-3 control-label help" data-help="{{Indique le decalage temporel par rapport a l'heure courante. Par exemple, s'il est 15:00 et que le decalage est de 30 minutes, alors on verifie la valeur a 15:30}}">{{Decalage temporel}}</label>
+                                <label class="col-sm-3 control-label help" data-help="{{Indique le decalage temporel par rapport a l'heure courante. Par exemple, s'il est 15:00 et que le decalage est de 30 minutes, alors on verifie la valeur entre [15:30 et 15:30 + intervalle]}}">{{Decalage temporel}}</label>
                                 <div class="col-sm-2">
                                     <input class="eqLogicAttr form-control" data-l1key="configuration" data-l2key="timeOffset" min="0" max="120" placeholder="30"/>
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label class="col-sm-3 control-label help" data-help="{{Indique la periode durant laquelle les informations seront gardees dans jeedom.}}">{{Retention}}</label>
+                                <label class="col-sm-3 control-label help" data-help="{{Indique la periode durant laquelle les informations collectees seront gardees dans jeedom.}}">{{Retention}}</label>
                                 <div class="col-sm-2">
                                     <select class="eqLogicAttr form-control" data-l1key="configuration" data-l2key="retention">
                                         <option value="0">{{Toujours}}</option>
@@ -188,9 +200,9 @@ $eqLogics = eqLogic::byType($plugin->getId());
 					echo '      <input type="checkbox" class="eqLogicAttr dayFull" data-l1key="configuration" data-l2key="' . $key . 'Full"/>{{Toute la journee}}';
                                         echo '      </label>';
 					echo '   </div>';
-                                        echo '   <div id="' . $key . 'Begin" class="input-control">';
+                                        echo '   <div id="' . $key . 'Start" class="input-control">';
                                         echo '      <label class="col-sm-2 control-label col-sm-2">{{Debut}}</label>';
-                                        echo '      <input class="col-sm-1 form-control eqLogicAttr input-sm timepicker" data-l1key="configuration" data-l2key="' . $key . 'Begin"/>';
+                                        echo '      <input class="col-sm-1 form-control eqLogicAttr input-sm timepicker" data-l1key="configuration" data-l2key="' . $key . 'Start"/>';
                                         echo '   </div>';
                                         echo '   <div id="' . $key . 'End" class="input-control">';
                                         echo '      <label class="col-sm-2 control-label">{{Fin}}</label>';
@@ -284,20 +296,11 @@ $eqLogics = eqLogic::byType($plugin->getId());
                 </div>
             </div>
         </div>
-        <!-- benoit5672 configuration -->
 	<div role="tabpanel" class="tab-pane" id="commandtab">
-	    <a class="btn btn-default btn-sm pull-right" id="bt_addVirtualInfo" style="margin-top:5px;"><i class="fas fa-plus-circle"></i> {{Ajouter une info virtuelle}}</a>
-	    <a class="btn btn-default btn-sm  pull-right" id="bt_addVirtualAction" style="margin-top:5px;"><i class="fas fa-plus-circle"></i> {{Ajouter une commande virtuelle}}</a><br/><br/>
 	    <table id="table_cmd" class="table table-bordered table-condensed">
 		<thead>
 		    <tr>
-		        <th style="width: 50px;"> ID</th>
-			<th style="width: 230px;">{{Nom}}</th>
-			<th style="width: 110px;">{{Sous-Type}}</th>
-			<th>{{Valeur}}</th>
-			<th>{{Paramètres}}</th>
-			<th style="width: 300px;">{{Options}}</th>
-			<th style="width: 150px;"></th>
+                <th style="max-width : 200px;">{{Nom}}</th><th>{{Type}}</th><th>{{Action}}</th>
 		    </tr>
 		</thead>
 		<tbody>
@@ -305,5 +308,6 @@ $eqLogics = eqLogic::byType($plugin->getId());
 		</tbody>
 	     </table>
 	</div>
+    <!-- benoit5672 configuration -->
 <?php include_file('desktop', 'magictrigger', 'js', 'magictrigger');?>
 <?php include_file('core', 'plugin.template', 'js');?>

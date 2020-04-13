@@ -10,7 +10,7 @@
 	"hasOwnDeamon" : false,
 	"maxDependancyInstallTime" : 0,
 	"changelog" : "",
-	"documentation" : "",
+	"documentation" : "/docs/index.html",
 	"link" : {
 		"forum":"https://community.jeedom.com/tags/plugin-magictrigger",
 		"video" : ""
