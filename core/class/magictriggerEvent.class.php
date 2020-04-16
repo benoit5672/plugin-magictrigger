@@ -30,21 +30,25 @@ class magictriggerEvent {
     /**
      * Return all the entries associated to the specified magicId
      */
+    /**
 	public static function byId($_magicID) {
 		$values = array(
 			'magicId' => $_magicId,
 		);
         $sql = 'SELECT magicId, dow, time, COUNT(*) AS count
                 FROM magictriggerEvent
-                WHERE magicId= :id
+                WHERE magicId= :magicId
                 GROUP BY time
                 ORDER BY magicId, dow, time;';
 		return DB::Prepare($sql, $values, DB::FETCH_TYPE_ALL, PDO::FETCH_CLASS, __CLASS__);
 	}
+     */
 
    /**
-    * Return all the entries associated to the specified magicId and the specified day of week (dow)
+    * Return all the entries associated to the specified magicId and the specified 
+    * day of week (dow)
     */
+    /**
     public static function byIdDow($_magicID, $_dow) {
         $values = array(
             'magicId' => $_magicId,
@@ -52,17 +56,22 @@ class magictriggerEvent {
         );
         $sql = 'SELECT magicId, dow, time, COUNT(*) AS count
                 FROM magictriggerEvent
-                WHERE magicId= :id AND dow= :dow
+                WHERE magicId= :magicId AND dow= :dow
                 GROUP BY time
                 ORDER BY magicId, dow, time;';
         return DB::Prepare($sql, $values, DB::FETCH_TYPE_ALL, PDO::FETCH_CLASS, __CLASS__);
     }
+     */
 
     /**
      * Return an array of elements for the specified magicId, doy of week (dow)
      * and between start and end 
      */
-    public static function byIdDowTime($_magicId, $_dow, $_start, $_end) {
+    private function byIdDowTime($_magicId, $_dow, $_start, $_end) {
+
+        if ($end == 2400) {
+            $end = 2359;
+        } 
 		$values = array(
 			'magicId' => $_magicId,
 			'dow'     => $_dow,
@@ -71,38 +80,42 @@ class magictriggerEvent {
 		);
         $sql = 'SELECT magicId, dow, time, COUNT(*) AS count
                 FROM magictriggerEvent
-                WHERE id= :id AND dow= :dow AND time > :start AND time < :end
+                WHERE magicId= :magicId AND dow= :dow AND time >= :start AND time <= :end
                 GROUP BY time
                 ORDER BY magicId, dow, time;';
-		return DB::Prepare($sql, array(), DB::FETCH_TYPE_ALL, PDO::FETCH_CLASS, __CLASS__);
+		return DB::Prepare($sql, $values, DB::FETCH_TYPE_ALL, PDO::FETCH_CLASS, __CLASS__);
     }
 
     /**
      * Return the an array of elements for the specified magicId, day of week (dow)
      * and between start and date. It sum all the elements in the same interval. 
      */
-    public static function byIdDowTimeInterval($_magicId, $_dow, $_start, $_end, $_interval, $_fill=true) {
-        $values = magictriggerEvent::byIdDowTime($_magicId, $_dow, $_start, $_end);
+    public static function getEventList($_magicId, $_dow, $_start, $_end, $_interval) {
+
+        $values = self::byIdDowTime($_magicId, $_dow, $_start, $_end);
         if (!is_array($values) || (count($values) > 0 && !is_object($values[0]))) {
-            log::add('magictrigger', 'error', __('Erreur dans byIdDowTimeInterval', __FILE__));
+            log::add('magictrigger', 'error', __('Erreur dans getEventList', __FILE__));
             return array();
         }
 
-        // initialize the result tabs with all values to 0 if _fill is set
+        // initialize the result tabs with all values to 0 
         $res = array();
-        if ($_fill == true) {
-            $minutes = 0;
-            $hours   = 0;
-            $count   = 24 * 60 / $_interval;
-            for($i = 0; $i < $count; $i++) {
-                array_push($res, new magictriggerEvent($_magicId, $_dow, ($hours * 100 + $minutes), 0));
-                $hours   += intval(($minutes + $interval) / 60);
-                $minutes  = ($minutes + $interval) % 60;
-            }
+        $minutes = 0;
+        $hours   = 0;
+        $count   = 24 * intval(60 / $_interval);
+        //log::add('magictrigger', 'debug', 
+        //         'getEventList will return an array of ' . $count . ' elements.');
+        for($i = 0; $i < $count; $i++) {
+            //log::add('magictrigger', 'debug', 'Add mte[' . $i . ']=' . ($hours * 100 + $minutes));
+            array_push($res, 
+                       self::create($_magicId, $_dow, ($hours * 100 + $minutes), 0));
+            $hours   += intval(($minutes + $_interval) / 60);
+            $minutes  = ($minutes + $_interval) % 60;
         }
         // Now addition the values returned from the DB, into a single interval
         foreach ($values as $value) {
-            $inter = intval($value->getTime() / $_interval); 
+            $inter = self::getIndex($value->getTime(), $_interval);
+            //log::add('magictrigger', 'debug', 'time=' . $value->getTime() . ' Add mte[' . $inter . ']=' . $value->getCount());
             ($res[$inter])->addCount($value->getCount());
         }
         return $res;
@@ -111,7 +124,7 @@ class magictriggerEvent {
     /**
      * Return an array tuple (magicId, dow, total for the dow)
      */
-    public static function byIdTotalPerDow($_magicId) {
+    public static function getTotalPerDow($_magicId) {
 		$values = array(
 			'magicId' => $_magicId,
 		);
@@ -154,8 +167,32 @@ class magictriggerEvent {
     }
 
 
+    /** 
+     * Create a new MagicTriggerEvent according to the specified parameters
+     */
+    public static function create($_magicId, $_dow, $_time, $_count=1) {
+
+        return new magictriggerEvent(array('magicId' => $_magicId, 
+                                           'dow' => $_dow, 
+                                           'time' => $_time,
+                                           'count' => $_count));
+    }
+
+    /**
+     * Return the index in the array for the specified time and interval
+     */
+    public static function getIndex($_time, $_interval) {
+        $hours   = intval($_time / 100);
+        $minutes = ($_time % 100);
+        return (((60 / $_interval) * $hours) + intval($minutes / $_interval));
+    }
+
+
 	/*     * *********************Methode d'instance************************* */
 
+    /**
+     * Add the number of event occurence to the existing object
+     */
     private function addCount($_count) {
         $this->count += $_count;
         return $this;
@@ -172,7 +209,7 @@ class magictriggerEvent {
     }
 
 	public function save() {
-        log::add('magictrigger', 'debug', 'Entering save()');
+        //log::add('magictrigger', 'debug', 'Entering save()');
 
         $parameters = array ( 
             'magicId' => $this->magicId,
