@@ -551,7 +551,7 @@ class magictrigger extends eqLogic {
 
         // Get the information from the cache
         $mte      = $magic->getCache('magicTriggerEvents', array());
-        if ($cmd->execCmd === 0 || count($mte) === 0) {
+        if ($cmd->execCmd() === 0 || count($mte) === 0) {
             // nothing to process, maybe in 'getInformation' mode. 
             return;
         }
@@ -593,7 +593,6 @@ class magictrigger extends eqLogic {
         $this->setCron();
 
         // rebuild the information
-        // @todo - verify errors at startup and for new objects
         $this->getInformation();
     }
 
