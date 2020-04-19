@@ -26,10 +26,10 @@ function saveEqLogic(_eqLogic) {
     }
     _eqLogic.configuration.triggers = $('#div_trigger .trigger').getValues('.expressionAttr');
     _eqLogic.configuration.actions  = $('#div_action .action').getValues('.expressionAttr');
-    console.log('triggers');
-    console.dir(_eqLogic.configuration.triggers);
-    console.log('actions');
-    console.dir(_eqLogic.configuration.actions);
+    //console.log('triggers');
+    //console.dir(_eqLogic.configuration.triggers);
+    //console.log('actions');
+    //console.dir(_eqLogic.configuration.actions);
     return _eqLogic;
 }
 
@@ -378,4 +378,86 @@ $('body').off('click','.vacation').on('click','.vacation',function (event) {
 $('.bt_showExpressionTest').off('click').on('click', function () {
     $('#md_modal').dialog({title: "{{Testeur d'expression}}"});
     $("#md_modal").load('index.php?v=d&modal=expression.test').dialog('open');
+});
+
+
+/*********************************************************************************************/
+// Learning section
+//
+function setRemaining() {
+
+    var root = $('#learning');
+	var startDate = root.find('.eqLogicAttr[data-l1key=configuration][data-l2key="learningStartDate"]');
+	var remaining = root.find('.eqLogicAttr[data-l1key=configuration][data-l2key="remaining"]');
+	var learning  = root.find('.eqLogicAttr[data-l1key=configuration][data-l2key="learning"]');
+
+    var end     = parseInt(startDate.value(), 10) + (parseInt(learning.value(), 10) * 604800);
+    var current = Math.round(new Date().getTime()/1000);
+
+    var seconds = (end - current);
+    var minutes = Math.floor(seconds/60);
+    var hours = Math.floor(minutes/60);
+    var days = Math.floor(hours/24);
+    var weeks = Math.floor(days/7);
+    days    = days-(weeks*7); 
+    hours   = hours-(weeks*24*7)-(days*24);
+    minutes = minutes-(weeks*24*7*24*60)-(days*24*60)-(hours*60);
+
+    value = "";
+    if (weeks > 0) {
+        value = value.concat(weeks, 's');
+    }
+    if (value.length > 0 && days > 0) {
+        value = value.concat(', ', days, 'j');
+    }
+    if (value.length > 0 && hours > 0) {
+        value = value.concat(', ', hours, 'h');
+    }
+    if (value.length > 0 && minutes > 0) {
+        value = value.concat(', ', minutes, 'm');
+    }
+    remaining.val(value);
+}
+
+$('body').off('click','.bt_razLearning').on('click','.bt_razLearning', function () {
+
+    bootbox.confirm('{{Etes-vous sur de vouloir supprimer l\'historique des donnees et recommencer l\'apprentissage}}', function(result) {
+        if (result) {
+            var root      = $('#learning');
+	        var startDate = root.find('.eqLogicAttr[data-l1key=configuration][data-l2key="learningStartDate"]');
+            var date      = Math.round(new Date().getTime()/1000);
+            startDate.val(date);
+            // Update remaining value
+            setRemaining();
+
+            // Remove the entries from the database
+	        $.ajax({
+	            type: "POST", 
+		        url: "plugins/magictrigger/core/ajax/magictrigger.ajax.php",
+		        data: {
+		         action: "removeAllbyId",
+                    id: $('.eqLogicAttr[data-l1key=id]').value(),
+		        },
+		        dataType: 'json',
+		        global: true,
+		        async: false,
+		        error: function (request, status, error) {
+		         handleAjaxError(request, status, error);
+		        },
+		        success: function (data) {
+		        if (data.state != 'ok') {
+		            $('#div_alert').showAlert({message: data.result, level: 'danger'});
+		         return;
+		        }
+		        list = data['result'];
+		        }
+	        });
+        }
+    });
+});
+
+$("a[href='#eqlogictab']").on('show.bs.tab', function(e) {
+
+    // When the tab is displayed, refresh the remaining value
+    setRemaining();
 });

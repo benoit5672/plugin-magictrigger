@@ -72,18 +72,18 @@ class magictriggerEvent {
         if ($end == 2400) {
             $end = 2359;
         } 
-		$values = array(
+		$parameters = array(
 			'magicId' => $_magicId,
 			'dow'     => $_dow,
             'start'   => $_start,
             'end'     => $_end,
 		);
         $sql = 'SELECT magicId, dow, time, COUNT(*) AS count
-                FROM magictriggerEvent
-                WHERE magicId= :magicId AND dow= :dow AND time >= :start AND time <= :end
+                FROM `magictriggerEvent`
+                WHERE `magicId` = :magicId AND `dow` = :dow AND `time` >= :start AND `time` <= :end
                 GROUP BY time
                 ORDER BY magicId, dow, time;';
-		return DB::Prepare($sql, $values, DB::FETCH_TYPE_ALL, PDO::FETCH_CLASS, __CLASS__);
+		return DB::Prepare($sql, $parameters, DB::FETCH_TYPE_ALL, PDO::FETCH_CLASS, __CLASS__);
     }
 
     /**
@@ -125,15 +125,16 @@ class magictriggerEvent {
      * Return an array tuple (magicId, dow, total for the dow)
      */
     public static function getTotalPerDow($_magicId) {
-		$values = array(
+
+		$parameters = array(
 			'magicId' => $_magicId,
 		);
         $sql = 'SELECT magicId, dow, 0 AS time, COUNT(*) AS count
-                FROM magictriggerEvent
-                WHERE magicId= :magicId
+                FROM `magictriggerEvent`
+                WHERE `magicId` = :magicId
                 GROUP BY dow
                 ORDER BY magicId, dow, time;';
-		return DB::Prepare($sql, $values, DB::FETCH_TYPE_ALL, PDO::FETCH_CLASS, __CLASS__);
+		return DB::Prepare($sql, $parameters, DB::FETCH_TYPE_ALL, PDO::FETCH_CLASS, __CLASS__);
     }
 
     /**
@@ -143,7 +144,7 @@ class magictriggerEvent {
 	public static function removeAllbyId($_magicId) {
 
         $parameters = array ( 
-            'magicId' => _magicId,
+            'magicId' => $_magicId,
         );
 
         $sql = 'DELETE FROM `magictriggerEvent` 
@@ -152,18 +153,34 @@ class magictriggerEvent {
 	}
 
     /**
-     * Remove all the entries associated to a magicTrigger object, for example
-     * when the object is deleted
+     * Remove all the entries older than the specified date for 
+     * magicId specified
      */
-    public static function removeAllbyIdTimestamp($_magicId, $_timestamp) {
+    public static function removeAllByIdTimestamp($_magicId, $_timestamp) {
 
         $parameters = array ( 
-            'magicId'   => _magicId,
-            'timestamp' => _timestamp,
+            'magicId' => $_magicId,
+            'added'   => $_timestamp,
         );
         $sql = 'DELETE FROM `magictriggerEvent` 
                 WHERE `magicId` = :magicId AND `added` < :timestamp;';
         return DB::Prepare($sql, $parameters, DB::FETCH_TYPE_ROW);
+    }
+
+
+    /**
+     * Remove all the entries that don't have pending eqLogic object
+     */
+    public static function removeDeadEvents() {
+        $sql = 'SELECT magicId, dow, time, count FROM `magictriggerEvent` 
+            WHERE `magicId` NOT IN 
+            (SELECT id FROM `eqLogic` WHERE magicId = id and `eqType_name` = "magictrigger");';
+		$values =  DB::Prepare($sql, array(), DB::FETCH_TYPE_ALL, PDO::FETCH_CLASS, __CLASS__);
+        foreach ($values as $value) {
+            log::add('magictrigger', 'info', __('Suppression des evenements "dead" pour l\'id', __FILE__)
+                . $value->getMagicId);
+            self::removeAllbyId($value->getMagicId);
+        }
     }
 
 
@@ -193,7 +210,7 @@ class magictriggerEvent {
     /**
      * Add the number of event occurence to the existing object
      */
-    private function addCount($_count) {
+    public function addCount($_count) {
         $this->count += $_count;
         return $this;
     }

@@ -154,20 +154,25 @@ $eqLogics = eqLogic::byType($plugin->getId());
                                 </div>
                             </div>
                             <br/>
-		                    <div class="alert alert-warning">
-				                {{Remettre a zero la periode d'apprentissage. Toutes les donnees deja collectees seront effacees.}}
-							    <a class="pull-right btn btn-warning tooltips" id="bt_razLearning" style="position:relative;top:-7px;" title="Relance le processus d'apprentissage. N'oubliez pas de sauvegarder après la remisea 0."><i class="fas fa-times"></i> RaZ apprentissage</a>
-			                </div>
-                            <div class="form-group">
-                                <label class="col-sm-3 control-label help" data-help="{{le nombre de semaines necessaire pour l'apprentissage. Pendant cette periode, aucune action ne sera declenchee.}}">{{Apprentissage (semaines)}}</label>
-                                <div class="col-sm-2">
-                                    <input class="eqLogicAttr form-control" data-l1key="configuration" data-l2key="learning">
+                            <div id="learning">
+		                        <div class="alert alert-warning">
+				                    {{Remettre a zero la periode d'apprentissage. Toutes les donnees deja collectees seront effacees.}}
+							        <a class="pull-right btn btn-warning tooltips bt_razLearning" style="position:relative;top:-7px;" title="Relance le processus d'apprentissage. N'oubliez pas de sauvegarder après la remisea 0."><i class="fas fa-times"></i> RaZ apprentissage</a>
+			                    </div>
+                                <div class="form-group">
+                                    <label class="col-sm-3 control-label help" data-help="{{le nombre de semaines necessaire pour l'apprentissage. Pendant cette periode, aucune action ne sera declenchee.}}">{{Apprentissage (semaines)}}</label>
+                                    <div class="col-sm-2">
+                                        <input class="eqLogicAttr form-control" data-l1key="configuration" data-l2key="learning">
+                                    </div>
                                 </div>
-                            </div>
-			                <div class="form-group">
-			                    <label class="col-sm-3 control-label">{{Temps Restant (semaines)}}</label>
-				                <div class="col-sm-2">
-					                <input type="text" disabled class="eqLogicAttr form-control" data-l1key="configuration" data-l2key="remaining">
+			                    <div class="form-group">
+			                        <label class="col-sm-3 control-label">{{Temps Restant}}</label>
+				                    <div class="col-sm-2">
+					                    <input type="text" disabled class="eqLogicAttr form-control" data-l1key="configuration" data-l2key="remaining">
+				                    </div>
+				                </div>
+			                    <div class="form-group">
+					                <input type="hidden" class="eqLogicAttr form-control" data-l1key="configuration" data-l2key="learningStartDate">
 				                </div>
 			                </div>
                             <!- benoit5672: add configuration fields ->

@@ -18,6 +18,7 @@
 
 try {
     require_once dirname(__FILE__) . '/../../../../core/php/core.inc.php';
+    require_once dirname(__FILE__) . '/../class/magictriggerEvent.class.php';
     include_file('core', 'authentification', 'php');
 
     if (!isConnect('admin')) {
@@ -25,6 +26,12 @@ try {
     }
 
     ajax::init();
+
+    if (init('action') == 'removeAllbyId') {
+        
+		magictriggerEvent::removeAllbyId(init('id'));
+		ajax::success();
+	}
 
     throw new Exception(__('Aucune méthode correspondante à : ', __FILE__) . init('action'));
     /*     * *********Catch exeption*************** */
