@@ -59,6 +59,50 @@ class magictriggerEvent {
         return $res;
     }
 
+
+    /**
+     * Calculate the statistics for the specified day, and between start and date. 
+     *
+     * To do that, it sums all the elements in the same interval. For the first
+     * entries, it loads the entries for the day before 
+     */
+    public static function getStats($_magicId, $_dow, $_start, $_end, $_interval, $_period) {
+
+        // Fetch the data for today and tomorrow
+        $t  = (($_dow + 1) % 7);
+        $tomorrow = self::getEvents($_magicId, $t, 0, $_period, $_interval);
+        $today    = self::getEvents($_magicId, $_dow, $_start, $_end, $_interval);
+        if ((!is_array($tomorrow) || (count($tomorrow) > 0 && !is_object($tomorrow[0])))
+            ||  (!is_array($today) || (count($today) > 0 && !is_object($today[0])))) {
+            log::add('magictrigger', 'error', __('Erreur dans getStats', __FILE__));
+            return array();
+        }
+
+        // Get the total for tomorrow (first entries) for the period 
+        // and the total for today
+        $totalTomorrow = magictriggerDB::getTotalPerDowTime($_magicId, $t, 0, $_period);
+        $totalToday    = magictriggerDB::getTotalPerDowTime($_magicId, $_dow, 0, 2359);
+        $total         = $totalToday + $totalTomorrow;
+
+        // Calculate the statistics for all the intervals
+        $p = intval($_period / $_interval);
+        for($i = 0; $i < $p; $i++) {
+            array_push($today, $tomorrow[$i]);
+        }
+        // 
+        $res   = array();
+        $count = count($today);
+        for ($i = 0; $i < $count; $i++) {
+            $total = 0;
+            for ($j = 0; $j < $p; $j++) {
+                $total += $yesterday[$i];
+            }
+            array_push($res, round(($count / $total) * 100));
+        }
+        return $res;
+    }
+
+
     /**
      * Return the index in the array for the specified time and interval
      */

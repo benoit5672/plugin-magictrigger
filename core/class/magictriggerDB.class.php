@@ -67,6 +67,29 @@ class magictriggerDB {
     }
 
     /**
+     * Return the total for the tuple (magicId, dow, start, end)
+     */
+    public static function getTotalPerDowTime($_magicId, $_dow, $_start, $_end) {
+		$parameters = array(
+			'magicId' => $_magicId,
+			'dow'     => $_dow,
+			'start'   => $_start,
+			'end'     => $_end,
+		);
+        $sql = 'SELECT magicId, dow, 0 AS time, COUNT(*) AS count
+                FROM `magictriggerEvent`
+                WHERE `magicId` = :magicId AND `dow` = :dow AND `time` >= :start AND `time` <= :end
+                GROUP BY dow
+                ORDER BY magicId, dow, time;';
+
+		$mte = DB::Prepare($sql, $parameters, DB::FETCH_TYPE_ALL, PDO::FETCH_CLASS, __CLASS__);
+        if (!is_array($mte) || (count($mte) > 0 && !is_object($mte[0]))) {
+            log::add('magictrigger', 'error', __('Erreur dans la fonction getTotalPerDowTime', __FILE__));
+        }
+        return $mte->getCount();
+    }
+
+    /**
      * Remove all the entries associated to a magicTrigger object, for example
      * when the object is deleted
      */
