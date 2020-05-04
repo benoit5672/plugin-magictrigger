@@ -86,7 +86,7 @@ class magictriggerDB {
         if (!is_array($mte) || (count($mte) > 0 && !is_object($mte[0]))) {
             log::add('magictrigger', 'error', __('Erreur dans la fonction getTotalPerDowTime', __FILE__));
         }
-        return $mte->getCount();
+        return ((count($mte) == 0) ? 0 : $mte[0]->getCount());
     }
 
     /**

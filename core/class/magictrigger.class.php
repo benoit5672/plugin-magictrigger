@@ -39,7 +39,8 @@ class magictrigger extends eqLogic {
      * Function executed every 5 minutes by jeedom (plugin)
      */
     public static function cron5() {
-        log::add('magictrigger' , 'debug', 'cron5');
+        
+        //log::add('magictrigger' , 'debug', 'cron5');
     	foreach (self::byType(__CLASS__) as $magic) {
             if (is_object($magic) && $magic->getIsEnable() == 1) {
                 try {
@@ -62,7 +63,7 @@ class magictrigger extends eqLogic {
 						}
 					}
 				} catch (Exception $e) {
-                    log::add('magictrigger', 'error', $this->getHumanName() . 
+                    log::add('magictrigger', 'error', $magic->getHumanName() . 
                         __('Expression cron non valide pour ', __FILE__) . ': ' 
                         . $magic->getCache('cron'));
 				}
@@ -171,14 +172,14 @@ class magictrigger extends eqLogic {
 
 
     /**
-     * Function used to build the cron arguments, based on the checkPeriod configuration
+     * Function used to build the cron arguments, based on the period configuration
      * parameters
      * set the result in cache
      */
     private function setCron() {
 
         // Minutes
-        $refresh  = $this->getConfiguration('checkPeriod');
+        $refresh  = $this->getConfiguration('period');
         $minutes  = $refresh % 60;
         $cronStr  = ($minutes == 0) ? '0 ' : '*/' . $minutes . ' ';
 
@@ -188,18 +189,14 @@ class magictrigger extends eqLogic {
         $cronStr .= '* * ';
         
         //  Days of week
-        //  @todo: rework needed for beginning of the day
-        //  based on the day before (day - 1)
-        $dow  = '';
+        $dow  = array();
         foreach (self::$_days as $d => $day) {
             if ($this->getConfiguration($day) == 1) {
-                if ($dow !== '') {
-                    $dow .= ',';
-                }
-                $dow .= $d;
+                array_push($dow, $d);
             }
         }
-        $cronStr .= $dow;
+        //$dow = array_uniq($dow);
+        $cronStr .= implode(',', $dow);
 
         $cronStr = checkAndFixCron($cronStr);
         log::add('magictrigger', 'debug', $this->getHumanName() . ' cron string = ' . $cronStr);
@@ -271,6 +268,13 @@ class magictrigger extends eqLogic {
      */
     private function checkEquipement() {
         
+        // interval cannot be less than period
+        $interval = $this->getConfiguration('interval');
+        $period   = $this->getConfiguration('period');
+        if ($interval < $period) {
+            throw new Exception(__('L\'intervalle ne peut pas etre inferieur a la periode.',__FILE__));
+        }
+
         // timeOffset [0..120]
         $timeOffset = $this->getConfiguration('timeOffset');
         if ($timeOffset === '' || !is_numeric($timeOffset) || $timeOffset < 0 || $timeOffset > 120) {
@@ -482,6 +486,12 @@ class magictrigger extends eqLogic {
         //    . $mte->getMagicId() . ', dow=' . $mte->getDayOfWeek() 
         //    . ', time=' . $mte->getTime());
 
+        log::add('magictrigger', 'info', $this->getHumanName() 
+            . __('triggerNotification = un nouvel evenement a ete ajoute', __FILE__));
+
+        // @todo Reload the information for 
+        //$this->getInformation();
+
         // Increase the total of events for the day
         $cmd = $this->getCmd(null, 'total' . $dow);
         if (!is_object($cmd)) {
@@ -494,20 +504,20 @@ class magictrigger extends eqLogic {
         //    . ', time=' . $mte->getTime() . ', total=' . $cmd->execCmd());
 
         // Update the cached list of events
-        $mteList   = $this->getCache('magicTriggerEvents', array());
+        /* #@todo: remove
+        $mteList   = $this->getCache('magicTriggerStats', array());
         if (count($mteList) == 0) {
             // nothing to process, maybe in 'getInformation' mode. 
             return;
         }
-        $period = $this->getConfiguration('checkPeriod');
+        $period = $this->getConfiguration('period');
         $index  = magictriggerEvent::getIndex($mte->getTime(), $period);
         $mteList[$index] += 1;
         //log::add('magictrigger', 'debug', $this->getHumanName() . 'mte[' . $index . '/' 
         //    . count($mteList) . ']=' . $mteList[$index] . ' + 1'); 
-        $this->setCache('magicTriggerEvents', $mteList);
+        $this->setCache('magicTriggerStats', $mteList);
+        */
         
-        log::add('magictrigger', 'info', $this->getHumanName() 
-            . __('triggerNotification = un nouvel evenement a ete ajoute', __FILE__));
     } 
 
 
@@ -529,77 +539,35 @@ class magictrigger extends eqLogic {
             return;
         }
 
+        // Get the information from the cache
+        $stats = $magic->getCache('magicTriggerStats', array());
+        if (count($stats) == 0) {
+            // nothing to process, maybe in 'getInformation' mode, or no data for today, 
+            return;
+        }
+
         // load configuration parameters
         $interval = $magic->getConfiguration('interval');
-        $period   = $magic->getConfiguration('checkPeriod');
+        $period   = $magic->getConfiguration('period');
         $offset   = $magic->getConfiguration('timeOffset');
         
-        // @todo, manage the day change
         // The tricks here is to manage the day change, in case (time + offset) goes to 
         // the next day.
         // 
-        // We have loaded (day) and (day + 1) in MTE cache, so we can manage the offset 
+        // We have loaded (day) and (day + 1) in cache, so we can manage the offset 
         // in case we go from (day) to (day + 1) without loading new data.
         // we just have to take care about the index to go to next day if the increaseTime 
         // is lower than the initial time
         // 
-        // IMPORTANT: we need to check if (day + 1) is monitored or not. If not, just ignore
-        //
-        $nextDayOffset = 24 * intval(60 / $interval);
         $curTime       = date('Hi');
         $time          = self::increaseTime($curTime, $offset);
-        $startNextDay  = (($time < $curTime) ? 1 : 0);
-        $start         = $time;
-        $end           = self::increaseTime($start, $interval);
-        $endNextDay    = (($end < $start) ? 1 : 0);
-
-        log::add('magictrigger', 'debug', 'BR>>' . $magic->getHumanName() . ': ' . $start . '/' . $startNextDay . '-' . ($end - 1) . '/' . $endNextDay);
-        // Check if we have to process the event for the (day), and potentially (day + 1)
-        $dow = (date('w') + (1 * $startNextDay)) % 7;
-        log::add('magictrigger', 'debug', 'BR>>' . $magic->getHumanName() . 'dow=' . $dow);
-        $day = self::$_days[$dow];
-        log::add('magictrigger', 'debug', 'BR>>' . $magic->getHumanName() . 'day=' . $day);
-        if ($this->getConfiguration($day, 0) == 0
-            || ($this->getConfiguration($day . 'Full', 0) == 0
-                && $start < $this->getConfiguration($day . 'Start', 0))) {
-            // Not in a monitored interval
-            log::add('magictrigger', 'info', $magic->getHumanName()
-                . __( ' la periode pour ', __FILE__) . $day . ' (' . $start . ')'
-                . __(' n\'est pas monitoree.', __FILE));
-            return;
-        }
-
-        // Get the total for the day
-        // @todo: adjust with total from (day + 1) if start is in (day) and end in (day + 1)?
-        $cmd = $magic->getCmd(null, 'total' . $dow);
-        if (!is_object($cmd)) {
-            // error
-            log::add('magictrigger', 'error', __('La commande ', __FILE__) . 'total' . $dow 
-                . __(' n\'existe pas', __FILE__));
-            return;
-        }
-
-        // Get the information from the cache
-        $mte = $magic->getCache('magicTriggerEvents', array());
-        if ($cmd->execCmd() == 0 || count($mte) == 0) {
-            // nothing to process, maybe in 'getInformation' mode. 
-            return;
-        }
+        $nextDay       = (($time < $curTime) ? 1 : 0);
+        $nextDayOffset = 24 * intval(60 / $interval);
 
         // Calculate the index for start and end, taking (day + 1) into account
-        $start = ($nextDayOffset * $startNextDay) + magictriggerEvent::getIndex($time, $period);
-        $end   = ($nextDayOffset * $endNextDay) + magictriggerEvent::getIndex($end, $period);
-
-
-        // Calculate the statistics for the period
-        $count = 0;
-        for ($i = $start; $i < $end; $i++) {
-            $count += $mte[$i];
-        }
-        $stat = round(($count / $cmd->execCmd()) * 100);
-        log::add('magictrigger', 'info', $magic->getHumanName() . ': stat=' . $stat 
-            . '% (mte[' . $start . '-' . ($end - 1) . ']=' . $count . ', total=' . $cmd->execCmd() 
-            . ', interval=' . $interval . ', offset=' . $offset . ', time+offset=' . $time . ')'); 
+        $index = ($nextDayOffset * $nextDay) + magictriggerEvent::getIndex($time, $period);
+        log::add('magictrigger', 'info', $magic->getHumanName() . ': stat=' . $stats[$index]
+            . '% (interval=' . $interval . ', offset=' . $offset . ', time+offset=' . $time . ')'); 
 
         $magic->executeActions($stat);
     }
@@ -628,7 +596,7 @@ class magictrigger extends eqLogic {
 		log::add('magictrigger', 'debug', $this->getHumanName() . ' Entering getInformation');
 
         // Clear cache first
-        $this->setCache('magicTriggerEvents', array());
+        $this->setCache('magicTriggerStats', array());
 
         // Load the totals per day from the Database
         $totals = magictriggerDB::getTotalPerDow($this->getId());
@@ -654,8 +622,9 @@ class magictrigger extends eqLogic {
 
         // Load events from the database
         // Calculate the start and end date we are looking in the DB
-        $interval = $this->getConfiguration('checkPeriod');
-        $mte      = array();
+        $interval = $this->getConfiguration('interval');
+        $period   = $this->getConfiguration('period');
+        $stats    = array();
         $dow      = date('w');
         $day      = self::$_days[$dow];
         if ($this->getConfiguration($day) == 1) {
@@ -667,24 +636,35 @@ class magictrigger extends eqLogic {
                 $end   = $this->getConfiguration($day . 'End');
             } 
 
-            // fetch from DB (day) and (day+1)
-            $mte1 = magictriggerEvent::getEvents($this->getId(), $dow, $start, $end, $interval);
-            //log::add('magictrigger', 'debug', $this->getHumanName() . ' mte1 array size=' . count($mte1));
-            //for ($i = 0; $i < count($mte1); $i++) {
-            //    log::add('magictrigger', 'debug', $this->getHumanname() . 'mte1[' . $i . ']=' . $mte1[$i]);
-            //}
-            $mte2 = magictriggerEvent::getEvents($this->getId(), (($dow + 1) % 7), $start, $end, $interval);
-            //log::add('magictrigger', 'debug', $this->getHumanName() . ' mte2 array size=' . count($mte2));
-            //for ($i = 0; $i < count($mte2); $i++) {
-            //    log::add('magictrigger', 'debug', $this->getHumanname() . 'mte2[' . $i . ']=' . $mte2[$i]);
-            //}
-            $mte  = array_merge($mte1, $mte2);
-            log::add('magictrigger', 'debug', $this->getHumanName() . ' mte array size=' . count($mte));
-            //for ($i = 0; $i < count($mte); $i++) {
-            //    log::add('magictrigger', 'debug', $this->getHumanname() . 'mte[' . $i . ']=' . $mte[$i]);
-            //}
+            $todayStats = magictriggerEvent::getStats($this->getId(), $dow, $start, $end, $period, $interval);
+            log::add('magictrigger', 'debug', $this->getHumanName() . ' today stats array size=' . count($todayStats));
+
+            // Add information of tomorrow, to manage the offset
+            $dow = ($dow + 1) % 7;
+            $day = self::$_days[$dow];
+            if ($this->getConfiguration($day) == 1) {
+                if ($this->getConfiguration($day . 'Full') == 1) {
+                    $start = 0;
+                    $end   = 2359; 
+                } else {
+                    $start = $this->getConfiguration($day . 'Start');
+                    $end   = $this->getConfiguration($day . 'End');
+                } 
+
+                // fetch the statistics from DB 
+                $tomorrowStats = magictriggerEvent::getStats($this->getId(), $dow, $start, $end, $period, $interval);
+                $tomorrowStats = array_slice($tomorrowStats, 0, intval($interval / $period));
+                log::add('magictrigger', 'debug', $this->getHumanName() . ' tomorrow stats array size=' . count($tomorrowStats));
+            } else {
+                $count = intval($interval / $period);
+                $tomorrowStats = array_fill(0, $count, 0);
+            }
+
+            // Merge both results into the array
+            $stats = array_merge($todayStats, $tomorrowStats);
         } 
-        $this->setCache('magicTriggerEvents', $mte);
+        log::add('magictrigger', 'debug', $this->getHumanName() . ' stats array size=' . count($stats));
+        $this->setCache('magicTriggerStats', $stats);
     }
 
     /**
@@ -740,7 +720,7 @@ class magictrigger extends eqLogic {
 	public function preInsert() {
         log::add('magictrigger', 'debug', $this->getHumanName() . ' Entering preInsert');
 
-        $this->setConfiguration('checkPeriod', 5);
+        $this->setConfiguration('period', 5);
         $this->setConfiguration('interval', 15);
         $this->setConfiguration('timeOffset', 30);
         $this->setConfiguration('learning', 4);

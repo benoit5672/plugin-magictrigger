@@ -25,11 +25,11 @@ class magictriggerEvent {
 
     /**
      * load the events for the specified day, and between start and date. 
-     * It sum all the elements in the same interval. 
-     * It also create elements for non present points in the interval
-     * It only return the total of events in the interval (array of integers)
+     * It sum all the elements in the same period. 
+     * It also create elements for non present points in the period
+     * It only return the total of events in the period (array of integers)
      */
-    public static function getEvents($_magicId, $_dow, $_start, $_end, $_interval) {
+    public static function getEvents($_magicId, $_dow, $_start, $_end, $_period) {
 
         $values = magictriggerDB::byIdDowTime($_magicId, $_dow, $_start, $_end);
         if (!is_array($values) || (count($values) > 0 && !is_object($values[0]))) {
@@ -38,22 +38,15 @@ class magictriggerEvent {
         }
 
         // initialize the result tabs with all values to 0 
-        $res = array();
-        $count   = 24 * intval(60 / $_interval);
-        //log::add('magictrigger', 'debug', 
-        //         'getEvents will return an array of ' . $count . ' elements.');
-        //$minutes = 0;
-        //$hours   = 0;
-        for($i = 0; $i < $count; $i++) {
-            //log::add('magictrigger', 'debug', 'Add mte[' . $i . ']=' . ($hours * 100 + $minutes));
-            array_push($res, 0);
-            //$hours   += intval(($minutes + $_interval) / 60);
-            //$minutes  = ($minutes + $_interval) % 60;
-        }
-        // Now addition the values returned from the DB, into a single interval
+        $count   = 24 * intval(60 / $_period);
+        $res = array_fill(0, $count, 0);
+        log::add('magictrigger', 'debug', 
+                 'getEvents will return an array of ' . $count . ' elements.');
+        
+        // Now addition the values returned from the DB, into a single period
         foreach ($values as $value) {
-            $inter = self::getIndex($value->getTime(), $_interval);
-            //log::add('magictrigger', 'debug', 'time=' . $value->getTime() . ' Add mte[' . $inter . ']=' . $value->getCount());
+            $inter = self::getIndex($value->getTime(), $_period);
+            log::add('magictrigger', 'debug', 'time=' . $value->getTime() . ' Add mte[' . $inter . ']=' . $value->getCount());
             $res[$inter] += $value->getCount();
         }
         return $res;
@@ -63,53 +56,56 @@ class magictriggerEvent {
     /**
      * Calculate the statistics for the specified day, and between start and date. 
      *
-     * To do that, it sums all the elements in the same interval. For the first
+     * To do that, it sums all the elements in the same period. For the first
      * entries, it loads the entries for the day before 
      */
-    public static function getStats($_magicId, $_dow, $_start, $_end, $_interval, $_period) {
+    public static function getStats($_magicId, $_dow, $_start, $_end, $_period, $_interval) {
 
         // Fetch the data for today and tomorrow
-        $t  = (($_dow + 1) % 7);
-        $tomorrow = self::getEvents($_magicId, $t, 0, $_period, $_interval);
-        $today    = self::getEvents($_magicId, $_dow, $_start, $_end, $_interval);
-        if ((!is_array($tomorrow) || (count($tomorrow) > 0 && !is_object($tomorrow[0])))
-            ||  (!is_array($today) || (count($today) > 0 && !is_object($today[0])))) {
-            log::add('magictrigger', 'error', __('Erreur dans getStats', __FILE__));
-            return array();
-        }
+        $t        = (($_dow + 1) % 7);
+        $tomorrow = self::getEvents($_magicId, $t, 0, $_interval, $_period);
+        $today    = self::getEvents($_magicId, $_dow, $_start, $_end, $_period);
+        $count    = count($today);
 
         // Get the total for tomorrow (first entries) for the period 
         // and the total for today
-        $totalTomorrow = magictriggerDB::getTotalPerDowTime($_magicId, $t, 0, $_period);
         $totalToday    = magictriggerDB::getTotalPerDowTime($_magicId, $_dow, 0, 2359);
+        $totalTomorrow = magictriggerDB::getTotalPerDowTime($_magicId, $t, 0, $_interval);
         $total         = $totalToday + $totalTomorrow;
 
-        // Calculate the statistics for all the intervals
-        $p = intval($_period / $_interval);
+        log::add('magictrigger', 'debug', 'getStats == total=' . $total . '(' . $totalToday . ' + ' . $totalTomorrow . ')');
+
+        // First, add the tomorrow entries to the today array
+        $p = intval($_interval / $_period);
+        log::add('magictrigger', 'debug', 'getStats == p=' . $p . '(' . $_interval . ' / ' . $_period . ')');
         for($i = 0; $i < $p; $i++) {
+            log::add('magictrigger', 'debug', 'getStats == add entry to $today[' . $i . '] = ' . $tomorrow[$i]);
             array_push($today, $tomorrow[$i]);
         }
-        // 
+
+        // Build the statistics
         $res   = array();
-        $count = count($today);
         for ($i = 0; $i < $count; $i++) {
-            $total = 0;
+            $sum = 0;
             for ($j = 0; $j < $p; $j++) {
-                $total += $yesterday[$i];
+                $sum += $today[$i+$j];
             }
-            array_push($res, round(($count / $total) * 100));
+            if ((round(($sum / $total) * 100)) != 0) {
+                log::add('magictrigger', 'debug', 'getStats == stats[' . $i . '] = ' . (round(($sum / $total) * 100)));
+            }
+            array_push($res, round(($sum / $total) * 100));
         }
         return $res;
     }
 
 
     /**
-     * Return the index in the array for the specified time and interval
+     * Return the index in the array for the specified time and period
      */
-    public static function getIndex($_time, $_interval) {
+    public static function getIndex($_time, $_period) {
         $hours   = intval($_time / 100);
         $minutes = ($_time % 100);
-        return (((60 / $_interval) * $hours) + intval($minutes / $_interval));
+        return (((60 / $_period) * $hours) + intval($minutes / $_period));
     }
 
 

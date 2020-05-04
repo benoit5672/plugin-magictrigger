@@ -113,7 +113,7 @@ $eqLogics = eqLogic::byType($plugin->getId());
                             <div class="form-group">
                                 <label class="col-sm-3 control-label help" data-help="{{Indique la periodicite de verification des conditions.}}">{{Periodicite}}</label>
                                 <div class="col-sm-2">
-                                    <select class="eqLogicAttr form-control" data-l1key="configuration" data-l2key="checkPeriod">
+                                    <select class="eqLogicAttr form-control" data-l1key="configuration" data-l2key="period">
                                         <option value="5">{{5 minutes}}</option>
                                         <option value="10">{{10 minutes}}</option>
                                         <option value="15" selected="selected">{{15 minutes}}</option>
