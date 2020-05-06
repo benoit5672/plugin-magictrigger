@@ -43,7 +43,7 @@ class magictriggerDB {
             'end'     => $_end,
 		);
         $sql = 'SELECT magicId, dow, time, COUNT(*) AS count
-                FROM `magictriggerEvent`
+                FROM `magictriggerDB`
                 WHERE `magicId` = :magicId AND `dow` = :dow AND `time` >= :start AND `time` <= :end
                 GROUP BY time
                 ORDER BY magicId, dow, time;';
@@ -59,7 +59,7 @@ class magictriggerDB {
 			'magicId' => $_magicId,
 		);
         $sql = 'SELECT magicId, dow, 0 AS time, COUNT(*) AS count
-                FROM `magictriggerEvent`
+                FROM `magictriggerDB`
                 WHERE `magicId` = :magicId
                 GROUP BY dow
                 ORDER BY magicId, dow, time;';
@@ -76,16 +76,18 @@ class magictriggerDB {
 			'start'   => $_start,
 			'end'     => $_end,
 		);
-        $sql = 'SELECT magicId, dow, 0 AS time, COUNT(*) AS count
-                FROM `magictriggerEvent`
+        $sql = 'SELECT magicId, dow, time, COUNT(*) AS count
+                FROM `magictriggerDB`
                 WHERE `magicId` = :magicId AND `dow` = :dow AND `time` >= :start AND `time` <= :end
-                GROUP BY dow
+                GROUP BY magicId
                 ORDER BY magicId, dow, time;';
 
 		$mte = DB::Prepare($sql, $parameters, DB::FETCH_TYPE_ALL, PDO::FETCH_CLASS, __CLASS__);
         if (!is_array($mte) || (count($mte) > 0 && !is_object($mte[0]))) {
             log::add('magictrigger', 'error', __('Erreur dans la fonction getTotalPerDowTime', __FILE__));
         }
+        log::add('magictrigger', 'debug', 'getTotalPerDowTime(' . $_magicId . ', ' . $_dow . ', ' 
+            . $_start . ', ' . $_end . ') == ' . ((count($mte) == 0) ? 0 : $mte[0]->getCount()));
         return ((count($mte) == 0) ? 0 : $mte[0]->getCount());
     }
 
@@ -99,7 +101,7 @@ class magictriggerDB {
             'magicId' => $_magicId,
         );
 
-        $sql = 'DELETE FROM `magictriggerEvent` 
+        $sql = 'DELETE FROM `magictriggerDB` 
                 WHERE `magicId` = :magicId;';
 		return DB::Prepare($sql, $parameters, DB::FETCH_TYPE_ROW);
 	}
@@ -114,7 +116,7 @@ class magictriggerDB {
             'magicId' => $_magicId,
             'added'   => $_timestamp,
         );
-        $sql = 'DELETE FROM `magictriggerEvent` 
+        $sql = 'DELETE FROM `magictriggerDB` 
                 WHERE `magicId` = :magicId AND `added` < :timestamp;';
         return DB::Prepare($sql, $parameters, DB::FETCH_TYPE_ROW);
     }
@@ -124,7 +126,7 @@ class magictriggerDB {
      * Remove all the entries that don't have pending eqLogic object
      */
     public static function removeDeadEvents() {
-        $sql = 'SELECT magicId, dow, time, 0 AS count FROM `magictriggerEvent` 
+        $sql = 'SELECT magicId, dow, time, 0 AS count FROM `magictriggerDB` 
             WHERE `magicId` NOT IN 
             (SELECT id FROM `eqLogic` WHERE magicId = id and `eqType_name` = "magictrigger");';
 		$values =  DB::Prepare($sql, array(), DB::FETCH_TYPE_ALL, PDO::FETCH_CLASS, __CLASS__);
@@ -142,7 +144,7 @@ class magictriggerDB {
      */
     public static function create($_magicId, $_dow, $_time, $_count=1) {
 
-        return new magictriggerEvent(array('magicId' => $_magicId, 
+        return new magictriggerDB(array('magicId' => $_magicId, 
                                            'dow' => $_dow, 
                                            'time' => $_time,
                                            'count' => $_count));
@@ -168,7 +170,7 @@ class magictriggerDB {
             'time'    => $this->time
         );
 
-        $sql = 'INSERT INTO `magictriggerEvent` SET
+        $sql = 'INSERT INTO `magictriggerDB` SET
                 `magicId` = :magicId, `dow` = :dow, `time` = :time;';
 		return DB::Prepare($sql, $parameters, DB::FETCH_TYPE_ROW);
 	}

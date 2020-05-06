@@ -116,6 +116,14 @@ class magictrigger extends eqLogic {
     }
 
 
+    /**
+     * Convert common time format to a numerical format
+     * 16:05 --> 1605
+     */
+    private static function toJeedomTime($_time) {
+        return intval(ltrim(str_replace(':', '', $_time), '0'));
+    }
+
   	/*     * *********************Methode d'instance************************* */
 
     /** PRIVATE FUNCTIONS **/
@@ -238,8 +246,8 @@ class magictrigger extends eqLogic {
                 }
                 $daysCond .= '(#njour# == ' . $d;
                 if ($this->getConfiguration($day . 'Full') == 0) {
-                    $start = intval(ltrim(str_replace(':', '', $this->getConfiguration($day . 'Start')), '0'));
-                    $end   = intval(ltrim(str_replace(':', '', $this->getConfiguration($day . 'End')), '0'));
+                    $start = self::toJeedomTime($this->getConfiguration($day . 'Start'));
+                    $end   = self::toJeedomTime($this->getConfiguration($day . 'End'));
                     $daysCond .= ' && #time# > ' . $start . ' && #time# < ' . $end;
                 }
                 $daysCond .= ')';
@@ -306,7 +314,7 @@ class magictrigger extends eqLogic {
                 if ($this->getConfiguration($day . 'Full') == 0
                     && ($this->getConfiguration($day . 'Start') === ''
                     || $this->getConfiguration($day . 'End') === ''
-                    || intval(ltrim(str_replace(':', '', $this->getConfiguration($day . 'Start')), '0')) >= intval(ltrim(str_replace(':', '', $this->getConfiguration($day . 'End')), '0')))) {
+                    || self::toJeedomTime($this->getConfiguration($day . 'Start')) >= self::toJeedomTime($this->getConfiguration($day . 'End')))) {
                     throw new Exception(__($day . ' est coche. Merci de renseigner soit le champ \'Toute la journee\' ou les champs \'debut\' et \'fin\' (l\'heure de fin doit etre apres l\'heure de debut).',__FILE__));
                 }
             }
@@ -370,6 +378,7 @@ class magictrigger extends eqLogic {
             }
         }
     }
+
 
     /** 
      * Function used to create all the commands in the eqLogic object
@@ -481,11 +490,10 @@ class magictrigger extends eqLogic {
         // Insert a new event in the database
         $dow = date('w');
         $mte = magictriggerDB::create($this->getId(), $dow, intval(date('Hi')), 1);
+        log::add('magictrigger', 'debug', $this->getHumanName() . ' (DB) MTE = ' 
+            . $mte->getMagicId() . ', dow=' . $mte->getDayOfWeek() 
+            . ', time=' . $mte->getTime());
         $mte->save();
-        //log::add('magictrigger', 'debug', $this->getHumanName() . ' (DB) MTE = ' 
-        //    . $mte->getMagicId() . ', dow=' . $mte->getDayOfWeek() 
-        //    . ', time=' . $mte->getTime());
-
         log::add('magictrigger', 'info', $this->getHumanName() 
             . __('triggerNotification = un nouvel evenement a ete ajoute', __FILE__));
 
@@ -542,7 +550,7 @@ class magictrigger extends eqLogic {
         // Get the information from the cache
         $stats = $magic->getCache('magicTriggerStats', array());
         if (count($stats) == 0) {
-            // nothing to process, maybe in 'getInformation' mode, or no data for today, 
+            // nothing to process, maybe in 'getInformation' mode
             return;
         }
 
@@ -599,28 +607,19 @@ class magictrigger extends eqLogic {
         $this->setCache('magicTriggerStats', array());
 
         // Load the totals per day from the Database
-        $totals = magictriggerDB::getTotalPerDow($this->getId());
-        if (!is_array($totals)) {
-            log::add('magictrigger', 'error', $this->getHumanName() 
-                . __('getInformation: Erreur database requete 1', __FILE__));
-            return;
-        }
-
-        // Update the total for each day of week, put 0 for non existing entry
-        $dows = array(0 => 0, 1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0, 6 => 0);
-        foreach ($totals as $total) {
-            $dows[$total->getDayOfWeek()] = $total->getCount();
-        }
-        foreach ($dows as $key => $value) {
-            $cmd = $this->getCmd(null, 'total' . $key);
+        foreach (self::$_days as $d => $day) {
+            $start = self::toJeedomTime($this->getConfiguration($day . 'Start'));
+            $end   = self::toJeedomTime($this->getConfiguration($day . 'End'));
+            $total = magictriggerDB::getTotalPerDowTime($this->getId(), $d, $start, $end);
+            $cmd   = $this->getCmd(null, 'total' . $d);
             if (!is_object($cmd)) {
                 continue;
             }
-            //log::add('magictrigger', 'debug', 'update total' . $key . ' to ' . $value);
-            $this->checkAndUpdateCmd('total' . $key, $value);
+            //log::add('magictrigger', 'debug', 'update total' . $d . ' to ' . $total);
+            $this->checkAndUpdateCmd('total' . $d, $total);
         }
 
-        // Load events from the database
+        // Load statistics from the database
         // Calculate the start and end date we are looking in the DB
         $interval = $this->getConfiguration('interval');
         $period   = $this->getConfiguration('period');
@@ -628,13 +627,8 @@ class magictrigger extends eqLogic {
         $dow      = date('w');
         $day      = self::$_days[$dow];
         if ($this->getConfiguration($day) == 1) {
-            if ($this->getConfiguration($day . 'Full') == 1) {
-                $start = 0;
-                $end   = 2359; 
-            } else {
-                $start = $this->getConfiguration($day . 'Start');
-                $end   = $this->getConfiguration($day . 'End');
-            } 
+            $start = self::toJeedomTime($this->getConfiguration($day . 'Start'));
+            $end   = self::toJeedomTime($this->getConfiguration($day . 'End'));
 
             $todayStats = magictriggerEvent::getStats($this->getId(), $dow, $start, $end, $period, $interval);
             log::add('magictrigger', 'debug', $this->getHumanName() . ' today stats array size=' . count($todayStats));
@@ -643,13 +637,8 @@ class magictrigger extends eqLogic {
             $dow = ($dow + 1) % 7;
             $day = self::$_days[$dow];
             if ($this->getConfiguration($day) == 1) {
-                if ($this->getConfiguration($day . 'Full') == 1) {
-                    $start = 0;
-                    $end   = 2359; 
-                } else {
-                    $start = $this->getConfiguration($day . 'Start');
-                    $end   = $this->getConfiguration($day . 'End');
-                } 
+                $start = self::toJeedomTime($this->getConfiguration($day . 'Start'));
+                $end   = self::toJeedomTime($this->getConfiguration($day . 'End'));
 
                 // fetch the statistics from DB 
                 $tomorrowStats = magictriggerEvent::getStats($this->getId(), $dow, $start, $end, $period, $interval);
@@ -734,7 +723,7 @@ class magictrigger extends eqLogic {
 	}
 
 	public function preSave() {
-        //log::add('magictrigger', 'debug', $this->getHumanName() . ' Entering preSave');
+        log::add('magictrigger', 'debug', $this->getHumanName() . ' Entering preSave');
 	}
 
     /**
@@ -748,7 +737,7 @@ class magictrigger extends eqLogic {
 
     /** Used to validate all the configurations parameters
      * Check that all the mandatory parameters are set
-     * Check that values are appropriate (ranges, syntax, ...(
+     * Check that values are appropriate (ranges, syntax, ...)
      */
 	public function preUpdate() {
         log::add('magictrigger', 'debug', $this->getHumanName() . ' Entering preUpdate');
@@ -756,6 +745,19 @@ class magictrigger extends eqLogic {
         $this->checkEquipement();
         $this->checkMonitoring();
         $this->checkConfiguration();
+        
+        // Set the Start end End value for each day depending on Full
+        foreach (self::$_days as $d => $day) {
+            if ($this->getConfiguration($day) == 1) { 
+                if ($this->getConfiguration($day . 'Full') == 1) {
+                    $this->setConfiguration($day . 'Start', '0:00');
+                    $this->setConfiguration($day . 'End', '23:59');
+                }
+            } else {
+               $this->setConfiguration($day . 'Start', '0:00');
+               $this->setConfiguration($day . 'End', '0:00');
+            }
+        }
 	}
 
     /**
@@ -765,7 +767,7 @@ class magictrigger extends eqLogic {
      */
 	public function postUpdate() {
         log::add('magictrigger', 'debug', $this->getHumanName() . ' Entering postUpdate');
-    
+
         // populate the cache
         $this->populateCache();
 

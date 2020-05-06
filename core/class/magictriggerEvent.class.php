@@ -38,8 +38,8 @@ class magictriggerEvent {
         }
 
         // initialize the result tabs with all values to 0 
-        $count   = 24 * intval(60 / $_period);
-        $res = array_fill(0, $count, 0);
+        $count = 24 * intval(60 / $_period);
+        $res   = array_fill(0, $count, 0);
         log::add('magictrigger', 'debug', 
                  'getEvents will return an array of ' . $count . ' elements.');
         
@@ -61,39 +61,56 @@ class magictriggerEvent {
      */
     public static function getStats($_magicId, $_dow, $_start, $_end, $_period, $_interval) {
 
-        // Fetch the data for today and tomorrow
-        $t        = (($_dow + 1) % 7);
-        $tomorrow = self::getEvents($_magicId, $t, 0, $_interval, $_period);
-        $today    = self::getEvents($_magicId, $_dow, $_start, $_end, $_period);
-        $count    = count($today);
+        // Check if we need data from tomorrow, that is to say that $_end + $_interval > 2400
+        $isTomorrowNeeded = (($_end + $_interval) >= 2400);
 
-        // Get the total for tomorrow (first entries) for the period 
-        // and the total for today
-        $totalToday    = magictriggerDB::getTotalPerDowTime($_magicId, $_dow, 0, 2359);
-        $totalTomorrow = magictriggerDB::getTotalPerDowTime($_magicId, $t, 0, $_interval);
-        $total         = $totalToday + $totalTomorrow;
+        // Fetch the data for today and tomorrow if needed
+        if (isTomorrowNeeded == true) {
+            $t             = (($_dow + 1) % 7);
+            $tomorrow      = self::getEvents($_magicId, $t, 0, $_interval, $_period);
+            $totalTomorrow = magictriggerDB::getTotalPerDowTime($_magicId, $t, 0, $_interval);
+        } else {
+            $tomorrow      = array_fill(0, intval($_interval / $_period), 0);
+            $totalTomorrow = 0;
+        } 
+        // Events for today
+        $today      = self::getEvents($_magicId, $_dow, $_start, $_end, $_period);
+        $totalToday = magictriggerDB::getTotalPerDowTime($_magicId, $_dow, $_start, $_end);
+        $count      = count($today);
 
-        log::add('magictrigger', 'debug', 'getStats == total=' . $total . '(' . $totalToday . ' + ' . $totalTomorrow . ')');
+        //  the total for today
+        $total = $totalToday + $totalTomorrow;
 
-        // First, add the tomorrow entries to the today array
-        $p = intval($_interval / $_period);
-        log::add('magictrigger', 'debug', 'getStats == p=' . $p . '(' . $_interval . ' / ' . $_period . ')');
-        for($i = 0; $i < $p; $i++) {
-            log::add('magictrigger', 'debug', 'getStats == add entry to $today[' . $i . '] = ' . $tomorrow[$i]);
-            array_push($today, $tomorrow[$i]);
-        }
+        log::add('magictrigger', 'debug', 'getStats: total=' . $total . '(' . $totalToday . ' + ' . $totalTomorrow . ')');
 
-        // Build the statistics
-        $res   = array();
-        for ($i = 0; $i < $count; $i++) {
-            $sum = 0;
-            for ($j = 0; $j < $p; $j++) {
-                $sum += $today[$i+$j];
+        if ($total != 0) {
+
+            // First, add the tomorrow entries to the today array
+            $p = intval($_interval / $_period);
+            for($i = 0; $i < $p; $i++) {
+                array_push($today, $tomorrow[$i]);
             }
-            if ((round(($sum / $total) * 100)) != 0) {
-                log::add('magictrigger', 'debug', 'getStats == stats[' . $i . '] = ' . (round(($sum / $total) * 100)));
+
+            // Build the statistics
+            $res  = array();
+            $max  = 0;
+            for ($i = 0; $i < $count; $i++) {
+                $sum = 0;
+                for ($j = 0; $j < $p; $j++) {
+                    $sum += $today[$i+$j];
+                }
+                $stat = round(($sum / $total) * 100);
+                if ($stat != 0) log::add('magictrigger', 'debug', 'getStats == stats[' . $i . '] = ' . $stat . '(' . $sum . '/' . $total . ')');
+                
+                array_push($res, $stat);
+                if ($stat >= $max) {
+                    $max  = $stat;
+                }
             }
-            array_push($res, round(($sum / $total) * 100));
+            log::add('magictrigger', 'info', __('Maximum du jour ', __FILE__) . $max . '%');
+        } else {
+            // today is an array of 0 values !
+            $res = $today;
         }
         return $res;
     }

@@ -19,7 +19,7 @@ require_once dirname(__FILE__) . '/../../../core/php/core.inc.php';
 
 function magictrigger_install() {
     // Create the table where the triggers are stored
-    $sql = 'CREATE TABLE IF NOT EXISTS `magictriggerEvent` ('; 
+    $sql = 'CREATE TABLE IF NOT EXISTS `magictriggerDB` ('; 
            . '`added` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,';
            . '`magicId` INT(11) NOT NULL,';
            . '`dow` TINYINT(1) UNSIGNED NOT NULL,';
@@ -36,7 +36,7 @@ function magictrigger_update() {
 
 function magictrigger_remove() {
     // drop the table where the triggers are stored
-    DB::Prepare('DROP TABLE IF EXISTS `magictriggerEvent`;', array(), DB::FETCH_TYPE_ROW);
+    DB::Prepare('DROP TABLE IF EXISTS `magictriggerDB`;', array(), DB::FETCH_TYPE_ROW);
 }
 
 ?>

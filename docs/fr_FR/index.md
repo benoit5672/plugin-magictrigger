@@ -185,7 +185,9 @@ Le plugin ajoute a cette condition 'utilisateur' des conditions de temps lies
 a la periode de monitoring que vous avez defini dans la section monitoring.
 
 Par exemple, si vous avez cocher 'lundi' de 15:00 a 16:45, alors sera ajouter
-'(#njour# == 1 && (#time# >= 1500 && #time# <= 1645)'
+```php
+(#njour# == 1 && (#time# >= 1500 && #time# <= 1645)
+```
 
 ### Actions
 
@@ -203,12 +205,12 @@ proche de la probabilite calculee, mais en dessous de cette probabilite.
 Ainsi, si la probabilite est de 55%, et que les differents seuils sont 
 40, 50, 60, alors l'action associe au seuil de 50 sera utilisee.
 
-*Note:*  si plusieurs seuil ont la meme valeur, alors seulement un de ces
+*Note:*  si plusieurs seuils ont la meme valeur, alors seulement un de ces
 seuil sera utilise.
 
 # Le widget
 
-Le widget sera celui par défaut du core avec l'affichage par défaut des commdes
+Le widget sera celui par défaut du core avec l'affichage par défaut des commandes
 deprendra la configuration de celles-ci.
 
 # Changelog
