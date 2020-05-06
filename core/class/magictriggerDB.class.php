@@ -51,25 +51,9 @@ class magictriggerDB {
     }
 
     /**
-     * Return an array tuple (magicId, dow, total for the dow)
-     */
-    public static function getTotalPerDow($_magicId) {
-
-		$parameters = array(
-			'magicId' => $_magicId,
-		);
-        $sql = 'SELECT magicId, dow, 0 AS time, COUNT(*) AS count
-                FROM `magictriggerDB`
-                WHERE `magicId` = :magicId
-                GROUP BY dow
-                ORDER BY magicId, dow, time;';
-		return DB::Prepare($sql, $parameters, DB::FETCH_TYPE_ALL, PDO::FETCH_CLASS, __CLASS__);
-    }
-
-    /**
      * Return the total for the tuple (magicId, dow, start, end)
      */
-    public static function getTotalPerDowTime($_magicId, $_dow, $_start, $_end) {
+    public static function getTotalPerDow($_magicId, $_dow, $_start, $_end) {
 		$parameters = array(
 			'magicId' => $_magicId,
 			'dow'     => $_dow,
@@ -84,9 +68,9 @@ class magictriggerDB {
 
 		$mte = DB::Prepare($sql, $parameters, DB::FETCH_TYPE_ALL, PDO::FETCH_CLASS, __CLASS__);
         if (!is_array($mte) || (count($mte) > 0 && !is_object($mte[0]))) {
-            log::add('magictrigger', 'error', __('Erreur dans la fonction getTotalPerDowTime', __FILE__));
+            log::add('magictrigger', 'error', __('Erreur dans la fonction getTotalPerDow', __FILE__));
         }
-        log::add('magictrigger', 'debug', 'getTotalPerDowTime(' . $_magicId . ', ' . $_dow . ', ' 
+        log::add('magictrigger', 'debug', 'getTotalPerDow(' . $_magicId . ', ' . $_dow . ', ' 
             . $_start . ', ' . $_end . ') == ' . ((count($mte) == 0) ? 0 : $mte[0]->getCount()));
         return ((count($mte) == 0) ? 0 : $mte[0]->getCount());
     }
