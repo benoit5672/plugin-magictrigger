@@ -132,7 +132,7 @@ class magictriggerEvent {
                     $sum += $todayEvents[$i + $j];
                 }
                 $stat = round(($sum / $total) * 100);
-                if ($stat != 0) log::add('magictrigger', 'debug', 'getStats == ' . $_today
+                if ($stat != 0) log::add('magictrigger', 'info', 'getStats => ' . $_today
                     . ' @ ' . self::getTime($i, $_period) . ' = ' . $stat . '% (' . $sum . '/' . $total . ')');
                 
                 array_push($res, $stat);

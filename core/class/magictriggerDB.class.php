@@ -70,8 +70,8 @@ class magictriggerDB {
         if (!is_array($mte) || (count($mte) > 0 && !is_object($mte[0]))) {
             log::add('magictrigger', 'error', __('Erreur dans la fonction getTotalPerDow', __FILE__));
         }
-        log::add('magictrigger', 'debug', 'getTotalPerDow(' . $_magicId . ', ' . $_dow . ', ' 
-            . $_start . ', ' . $_end . ') == ' . ((count($mte) == 0) ? 0 : $mte[0]->getCount()));
+        //log::add('magictrigger', 'debug', 'getTotalPerDow(' . $_magicId . ', ' . $_dow . ', ' 
+        //    . $_start . ', ' . $_end . ') == ' . ((count($mte) == 0) ? 0 : $mte[0]->getCount()));
         return ((count($mte) == 0) ? 0 : $mte[0]->getCount());
     }
 

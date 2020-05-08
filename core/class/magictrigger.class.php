@@ -566,7 +566,7 @@ class magictrigger extends eqLogic {
         log::add('magictrigger', 'info', $magic->getHumanName() . ': stat=' . $stats[$index]
             . '% (interval=' . $interval . ', offset=' . $offset . ', time+offset=' . $time . ')'); 
 
-        $magic->executeActions($stat);
+        $magic->executeActions($stats[$index]);
     }
 
 
@@ -643,13 +643,35 @@ class magictrigger extends eqLogic {
         $period      = $this->getConfiguration('period');
         $offset      = $this->getConfiguration('timeOffset');
 
+        // holiday and vacation
+        $holiday = false;
+        if ($this->getConfiguration('holiday') == 1) {
+            $holiday = jeedom::evaluateExpression($this->getConfiguration('holidayInfo'));
+            if (!is_bool($holiday) && !is_numeric($holiday)) {
+                log::add('magictrigger', 'error', 
+                    __('La commande \'jour ferie\' est invalide', __FILE__));
+                $holiday = false;
+            } 
+        }
+        $vacation = false;
+        if ($this->getConfiguration('vacation') == 1) {
+            $vacation = jeedom::evaluateExpression($this->getConfiguration('vacationInfo'));
+            if (!is_bool($vacation) && !is_numeric($vacation)) {
+                log::add('magictrigger', 'error', 
+                    __('La commande \'vacances\' est invalide', __FILE__));
+                $vacation = false;
+            } 
+        }
+        log::add('magictrigger', 'info', '$holiday=' . $holiday . ', vacation=' . $vacation);
+
         // Load the totals per day from the Database
+        $dow = date('w');
         foreach (self::$_days as $today => $todayStr) {
 
-            $total = $this->getTotal($today, $interval);
-            $cmd   = $this->getCmd(null, 'total' . $today);
-            if (!is_object($cmd)) {
-                continue;
+            if ($today == $dow && ($holiday == true || $vacation == true)) { 
+                $total = 0;
+            } else {
+                $total = $this->getTotal($today, $interval);
             }
             //log::add('magictrigger', 'debug', 'update total' . $today . ' to ' . $total);
             $this->checkAndUpdateCmd('total' . $today, $total);
@@ -662,7 +684,11 @@ class magictrigger extends eqLogic {
         $tomorrow      = (($today + 1) % 7);
 
         // Fetch statistics for today and tomorrow. Only store offset information for tomorrow
-        $todayStats    = $this->getStatistics($today, $period, $interval);
+        if ($holiday == true || $vacation == true) { 
+            $todayStats = array_fill(0, (24 * intval(60 / $period)), 0);
+        } else {
+            $todayStats = $this->getStatistics($today, $period, $interval);
+        }
         $tomorrowStats = $this->getStatistics($tomorrow, $period, $interval); 
         $tomorrowStats = array_slice($tomorrowStats, 0, intval($offset / $period));
 
