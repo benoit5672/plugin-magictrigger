@@ -41,6 +41,13 @@ class magictrigger extends eqLogic {
     public static function cron5() {
         
         //log::add('magictrigger' , 'debug', 'cron5');
+        // If we are running between 0:00 and 0:04, then ignore, we will
+        // use the cronDaily instead
+        if (date('H') == 0 && date('i') < 5) {
+            return;
+        }
+
+        // Iterate, and process all magic trigger objects
     	foreach (self::byType(__CLASS__) as $magic) {
             if (is_object($magic) && $magic->getIsEnable() == 1) {
                 try {
@@ -85,6 +92,9 @@ class magictrigger extends eqLogic {
             
             // Refresh the data
             $magic->getInformation(); 
+
+            // once the information has been fetched, process the data !
+            $magic->cronNotification($magic);
         }
      }
 
@@ -409,6 +419,7 @@ class magictrigger extends eqLogic {
 		$cmd->setSubType('other');
         $cmd->save();
 
+        // Create the commands for the total per day
         foreach (self::$_days as $k => $day) {
 		    $cmd = $this->getCmd(null, 'total' . $k);
 		    if (!is_object($cmd)) {
@@ -449,17 +460,19 @@ class magictrigger extends eqLogic {
                     $options = $action['options'];
                 }
 				//if ($options['enable'] === '1'){
-                    // Replace #threshold# with the value
-					foreach ($options as $key => $option) {
-						$options[$key] = str_replace("#threshold#", $action['threshold'], $option);
-					}
-					foreach ($options as $key => $option) {
-						$options[$key] = str_replace("#title#", $this->getName(), $option);
-					}
-                    log::add('magictrigger', 'info', $this->getHumanName() 
-                        . __(': Execution de la commande ' . $action['cmd'] . ' avec les options ' 
-                        . json_encode($options), __FILE));
-					scenarioExpression::createAndExec('action', $action['cmd'], $options);
+                // Replace #threshold# with the threshold selected
+                // #value# with the current value
+                // #title# with the name of the equipment
+			    foreach ($options as $key => $option) {
+                    $opt = str_replace('#threshold#', $action['threshold'], $option);
+					$opt = str_replace('#value#', $_value, $opt);
+					$opt = str_replace('#title#', $this->getName(), $opt);
+                    $options[$key] = $opt;
+				}
+                log::add('magictrigger', 'info', $this->getHumanName() 
+                       . __(': Execution de la commande ' . $action['cmd'] . ' avec les options ' 
+                       . json_encode($options), __FILE));
+				scenarioExpression::createAndExec('action', $action['cmd'], $options);
 				//}					
 			} catch (Exception $e) {
                 log::add('magictrigger', 'error', $this->getHumanName() 
@@ -559,14 +572,65 @@ class magictrigger extends eqLogic {
         $curTime       = date('Hi');
         $time          = self::increaseTime($curTime, $offset);
         $nextDay       = (($time < $curTime) ? 1 : 0);
-        $nextDayOffset = 24 * intval(60 / $interval);
+        $nextDayOffset = 24 * intval(60 / $period);
 
         // Calculate the index for start and end, taking (day + 1) into account
         $index = ($nextDayOffset * $nextDay) + magictriggerEvent::getIndex($time, $period);
         log::add('magictrigger', 'info', $magic->getHumanName() . ': stat=' . $stats[$index]
-            . '% (interval=' . $interval . ', offset=' . $offset . ', time+offset=' . $time . ')'); 
+            . '% (index=' . $index . ', interval=' . $interval . ', offset=' . $offset 
+            . ', time+offset=' . $time . ')'); 
 
         $magic->executeActions($stats[$index]);
+    }
+
+    /**
+     * Get the statistics for the day specified.
+     */
+    public function getStatistics($_today, $_period, $_interval) {
+
+        // Load statistics from the database
+        // Calculate the start and end date we are looking in the DB
+        $stats       = array();
+        $tomorrow    = (($_today + 1) % 7);
+        $todayStr    = self::$_days[$_today];
+        $tomorrowStr = self::$_days[$tomorrow];
+
+        $todayStart    = self::timeToJeeTime($this->getConfiguration($todayStr . 'Start'));
+        $todayEnd      = self::timeToJeeTime($this->getConfiguration($todayStr . 'End'));
+        $tomorrowStart = self::timeToJeeTime($this->getConfiguration($tomorrowStr . 'Start'));
+        $tomorrowEnd   = self::timeToJeeTime($this->getConfiguration($tomorrowStr . 'End'));
+        return magictriggerEvent::getStats($this->getId(), $_today, $todayStart, $todayEnd,
+                                           $tomorrow, $tomorrowStart, $tomorrowEnd, 
+                                           $_period, $_interval);
+    }
+
+
+    /**
+     * Get min threshold.
+     */
+    public function getMinThreshold() {
+        $actions   = $this->getConfiguration('actions');
+        $threshold = 100;
+        foreach ($actions as $a) {
+            if ($a['threshold'] < $threshold) {
+                $threshold = $a['threshold'];
+            }
+        }
+        return $threshold;
+    } 
+
+    /**
+     * Get max threshold.
+     */
+    public function getMaxThreshold() {
+        $actions   = $this->getConfiguration('actions');
+        $threshold = 0; 
+        foreach ($actions as $a) {
+            if ($a['threshold'] > $threshold) {
+                $threshold = $a['threshold'];
+            }
+        }
+        return $threshold;
     }
 
 
@@ -583,27 +647,6 @@ class magictrigger extends eqLogic {
 
         // rebuild the information
         $this->getInformation();
-    }
-
-    /**
-     * Get the statistics for the day specified.
-     */
-    private function getStatistics($_today, $_period, $_interval) {
-
-        // Load statistics from the database
-        // Calculate the start and end date we are looking in the DB
-        $stats       = array();
-        $tomorrow    = (($_today + 1) % 7);
-        $todayStr    = self::$_days[$_today];
-        $tomorrowStr = self::$_days[$tomorrow];
-
-        $todayStart    = self::timeToJeeTime($this->getConfiguration($todayStr . 'Start'));
-        $todayEnd      = self::timeToJeeTime($this->getConfiguration($todayStr . 'End'));
-        $tomorrowStart = self::timeToJeeTime($this->getConfiguration($tomorrowStr . 'Start'));
-        $tomorrowEnd   = self::timeToJeeTime($this->getConfiguration($tomorrowStr . 'End'));
-        return magictriggerEvent::getStats($this->getId(), $_today, $todayStart, $todayEnd,
-                                           $tomorrow, $tomorrowStart, $tomorrowEnd, 
-                                           $_period, $_interval);
     }
 
     /**
@@ -662,7 +705,7 @@ class magictrigger extends eqLogic {
                 $vacation = false;
             } 
         }
-        log::add('magictrigger', 'info', '$holiday=' . $holiday . ', vacation=' . $vacation);
+        log::add('magictrigger', 'info', 'holiday=' . $holiday . ', vacation=' . $vacation);
 
         // Load the totals per day from the Database
         $dow = date('w');
@@ -851,5 +894,111 @@ class magictriggerCmd extends cmd {
                 break;
         }
 	}
+
+    public function getStatistics($_options = array()) {
+
+        $magic = $this->getEqLogic(); 
+        $today = $_options['dow'];
+        if ($today == -1) {
+            $today = intval(str_replace('total', '', $this->getLogicalId()));
+        } 
+        $period = $_options['period'];
+        if ($period == 0) {
+            $period = $magic->getConfiguration('period');
+        } 
+        $interval = $_options['interval'];
+        if ($interval == 0) {
+            $interval   = $magic->getConfiguration('interval');
+        } 
+        $count      = 24 * intval(60 / $period);
+        log::add('magictrigger', 'info', 'getStatistics on command ' . $this->getName() . ' (today='. $today . ', period=' . $period . ', interval=' . $interval . ')');
+        $statistics = $magic->getStatistics($today, $period, $interval);
+        $result     = array('dow' => $today, 'period' => $period, 
+            'interval' => $interval, 'points' => array(),
+            'minThreshold' => $magic->getMinThreshold(), 'maxThreshold' => $magic->getMaxThreshold());
+        for ($i = 0; $i < $count; $i++) {
+            array_push($result['points'], 
+                       array('time'  => magictriggerEvent::getTime($i, $period),
+                             'value' => $statistics[$i]));
+        } 
+        return $result;
+    }
+
+
+    public function toHtml($_version = 'dashboard', $_options = '') {
+                                $_version = jeedom::versionAlias($_version);
+       $html = '';
+       $replace = array(
+            '#id#' => $this->getId(),
+            '#name#' => $this->getName(),
+            '#name_display#' => ($this->getDisplay('icon') != '') ? $this->getDisplay('icon') : $this->getName(),
+            '#history#' => 'magictrigger-graph',
+            '#hide_history#' => 'hidden',
+            '#unite#' => $this->getUnite(),
+            '#minValue#' => $this->getConfiguration('minValue', 0),
+            '#maxValue#' => $this->getConfiguration('maxValue', 100),
+            '#logicalId#' => $this->getLogicalId(),
+            '#uid#' => 'cmd' . $this->getId() . eqLogic::UIDDELIMITER . mt_rand() . eqLogic::UIDDELIMITER,
+            '#version#' => $_version,
+            '#eqLogic_id#' => $this->getEqLogic_id(),
+            '#generic_type#' => $this->getGeneric_type(),
+            '#hide_name#' => '',
+        );
+        //$replace['<script>'] = str_replace('#uid#', $replace['#uid#'], "<script>\n$('.cmd[data-cmd_uid=#uid#] .magictrigger-graph').on('click', function() { bootbox.confirm('{{On va ouvrir une modale}}', function(result) {}); });");
+        $replace['<script>'] = str_replace('#uid#', $replace['#uid#'], "<script>\n$('.cmd[data-cmd_uid=#uid#] .magictrigger-graph').on('click', function() { $('#md_modal').dialog({title: '{{Statistique}}'});\n$('#md_modal').load('index.php?v=d&plugin=magictrigger&modal=modal.magictrigger&cmd_id=' + $(this).closest('.cmd').attr('data-cmd_id')).dialog('open'); });");
+
+
+        if ($this->getDisplay('showNameOn' . $_version, 1) == 0) {
+            $replace['#hide_name#'] = 'hidden';
+        }
+        if ($this->getDisplay('showIconAndName' . $_version, 0) == 1) {
+            $replace['#name_display#'] = $this->getDisplay('icon') . ' ' . $this->getName();
+        }
+        $template = $this->getWidgetTemplateCode($_version);
+        if ($_options != '') {
+            $options = jeedom::toHumanReadable($_options);
+            $options = is_json($options, $options);
+            if (is_array($options)) {
+                foreach ($options as $key => $value) {
+                    $replace['#' . $key . '#'] = $value;
+                }
+            }
+        }
+        if ($this->getType() == 'info') {
+            $replace['#state#'] = '';
+            $replace['#tendance#'] = '';
+            if ($this->getEqLogic()->getIsEnable() == 0) {
+                $template = getTemplate('core', $_version, 'cmd.error');
+                $replace['#state#'] = 'N/A';
+            } else {
+                $replace['#state#'] = $this->execCmd();
+                if (strpos($replace['#state#'], 'error::') !== false) {
+                    $template = getTemplate('core', $_version, 'cmd.error');
+                    $replace['#state#'] = str_replace('error::', '', $replace['#state#']);
+                } else {
+                    if ($this->getSubType() == 'numeric' && trim($replace['#state#']) === '') {
+                        $replace['#state#'] = 0;
+                    }
+                }
+            }
+
+            $replace['#state#'] = str_replace(array("\'", "'","\n"), array("'", "\'",'<br/>'), $replace['#state#']);
+            $replace['#collectDate#'] = $this->getCollectDate();
+            $replace['#valueDate#'] = $this->getValueDate();
+            $replace['#alertLevel#'] = $this->getCache('alertLevel', 'none');
+            $parameters = $this->getDisplay('parameters');
+            if (is_array($parameters)) {
+                foreach ($parameters as $key => $value) {
+                    $replace['#' . $key . '#'] = $value;
+                }
+            }
+            return translate::exec(template_replace($replace, $template), 'core/template/widgets.html');
+        } else {
+            $template = getTemplate('core', $_version, 'cmd.error');
+            $replace['#state#'] = 'N/A';
+            return translate::exec(template_replace($replace, $template), 'core/template/widgets.html');
+        }
+    }
+
 }
 

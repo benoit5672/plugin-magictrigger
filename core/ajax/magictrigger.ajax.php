@@ -29,8 +29,26 @@ try {
 
     if (init('action') == 'removeAllbyId') {
         
-		magictriggerEvent::removeAllbyId(init('id'));
+		$cmd = cmd::byId(init('id'));
+		if (!is_object($cmd)) {
+			throw new Exception(__('Commande ID inconnu : ', __FILE__) . init('id'));
+		}
+		magictriggerEvent::removeAllbyId($cmd);
 		ajax::success();
+	}
+
+    if (init('action') == 'getStatistics') {
+        log::add('magictrigger', 'info', 'AJAX : getStatistics');
+		$cmd = cmd::byId(init('id'));
+		if (!is_object($cmd)) {
+			throw new Exception(__('Commande ID inconnu : ', __FILE__) . init('id'));
+		}
+        log::add('magictrigger', 'info', 'AJAX : getStatistics 2');
+        $options['dow'] = init('dow');
+        $options['period'] = init('period');
+        $options['interval'] = init('interval');
+        log::add('magictrigger', 'info', 'AJAX : getStatistics 3');
+		ajax::success($cmd->getStatistics($options));
 	}
 
     throw new Exception(__('Aucune méthode correspondante à : ', __FILE__) . init('action'));
