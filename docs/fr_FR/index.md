@@ -221,7 +221,7 @@ En cliquant sur une commande (par exemple 'lundi'), une fenetre modal est affich
 En cliquant sur 'graphe' vous pouvez vous rendre compte des statistiques en fonction des 
 parametres qui ont ete configure sur l'equipement. 
 
-[widget](/images/widget_graph1.png)
+[graph1](/images/widget_graph1.png)
 
 2 lignes rouges sont affichees, et representent le seuil minimum et le seuil maximum configures.
 Si les colonnes noires ne depassent pas le seuil minimum, alors aucune action ne sera declenchee.
@@ -233,7 +233,7 @@ sur les probabilites, en se basant sur les meme evenements.
 Par exemple, en gardant la meme periodicite (5 minutes), mais en changeant l'intervalle (donc la 
 marge d'erreur) de 15 minutes a 30 minutes, on obtient le graphe suivant:
 
-[widget](/images/widget_graph1.png)
+[graph2](/images/widget_graph2.png)
 
 # Changelog
 
