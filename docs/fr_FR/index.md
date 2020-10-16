@@ -32,7 +32,7 @@ Il y a donc une persistence des evenements en cas de redemarrage de jeedom.
 > de scenario par exemple), si la probabilite que quelqu'un rentre entre 16h30 
 > et 16h45 depasse 60%.
 
-[graph1](/assets/images/widget_graph1.png)
+[graph1](../assets/images/widget_graph1.png)
 
 # Installation
 
@@ -56,7 +56,7 @@ Il y a trois sections distinctes afin de configurer le plugin:
 La section equipement sert a configurer les parametres habituels de jeedom, 
 et egalement les notions de temps du plugin.
 
-![Equipement](/assets/images/equipment.png)
+![Equipement](../assets/images/equipment.png)
 
 ### Periodicite
 
@@ -86,7 +86,7 @@ de place possible.
 Par exemple, avec 2709 evenements collectes et stockes en base de donnees, 
 l'espace necessaire n'est que de 0.13MB.
 
-![DB](/assets/images/DB.png)
+![DB](../assets/images/DB.png)
   
 ### Periode d'apprentissage
 
@@ -139,7 +139,7 @@ depend donc de la precision que l'on recherche.
 La section monitoring sert a configurer les jours qui vont etre surveilles, 
 et si besoin d'exclure des periodes (jour ferie ou vacances).
 
-[Monitoring](/assets/images/monitoring.png)
+[Monitoring](../assets/images/monitoring.png)
 
 ### Periode de monitoring
 
@@ -163,7 +163,7 @@ Pour ma part, j'utilise le plugin 'information du jour' de lunarok.
 Dans la section configuration, on va s'attacher a configurer les evenements a 
 surveiller, ainsi que les actions a declencher en fonction de seuils.
 
-[Configuration](/assets/images/configuration.png)
+[Configuration](../assets/images/configuration.png)
 
 ### Declencheurs
 
@@ -216,14 +216,14 @@ Le widget sera celui par défaut du core. Pour l'affichage des commamdes, l'affi
 par défaut est utilise pour la version 'mobile'. Pour la version 'dashboard' un widget 
 specifique a ete cree.
 
-[widget](/assets/images/widget.png)
+[widget](../assets/images/widget.png)
 
 En cliquant sur une commande (par exemple 'lundi'), une fenetre modal est affichee. 
 
 En cliquant sur 'graphe' vous pouvez vous rendre compte des statistiques en fonction des 
 parametres qui ont ete configure sur l'equipement. 
 
-[graph1](/assets/images/widget_graph1.png)
+[graph1](../assets/images/widget_graph1.png)
 
 2 lignes rouges sont affichees, et representent le seuil minimum et le seuil maximum configures.
 Si les colonnes noires ne depassent pas le seuil minimum, alors aucune action ne sera declenchee.
@@ -235,7 +235,7 @@ sur les probabilites, en se basant sur les meme evenements.
 Par exemple, en gardant la meme periodicite (5 minutes), mais en changeant l'intervalle (donc la 
 marge d'erreur) de 15 minutes a 30 minutes, on obtient le graphe suivant:
 
-[graph2](/assets/images/widget_graph2.png)
+[graph2](../assets/images/widget_graph2.png)
 
 # Changelog
 
