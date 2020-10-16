@@ -429,9 +429,9 @@ class magictrigger extends eqLogic {
 			    $cmd->setName(__('total ' . ucfirst($day), __FILE__));
 			    $cmd->setType('info');
 			    $cmd->setSubType('numeric');
-                $cmd->setTemplate('dashboard', 'magictrigger');
+                            $cmd->setTemplate('dashboard', 'magictrigger');
 			    $cmd->setEqLogic_id($this->getId());
-                $cmd->setOrder($order++);
+                            $cmd->setOrder($order++);
 			    $cmd->save();
 			    $this->checkAndUpdateCmd('total' . $k, 0);
 		    }
