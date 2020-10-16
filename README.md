@@ -1,4 +1,4 @@
-# jeedom-magictrigger
+# plugin-magictrigger
 Plugin permettant de collecter des evenements, et de prevoir de maniere statistiques les chances que cet evenement se produise  pour declenchers des actions.
 
 Le nombre d'evenements est totalise par jour de la semaine, avec potentiellement des conditions complexes, et permet donc de faire des statistics difficilement realisable via scenario et historique.
