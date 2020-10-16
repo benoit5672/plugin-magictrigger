@@ -5,13 +5,13 @@
 	"licence" : "AGPL",
 	"author" : "benoit5672",
 	"require" : "4.0.0",
-	"version" : "0.9.0",
+	"version" : "1.0.0",
 	"category" : "organization",
 	"hasDependency" : false,
 	"hasOwnDeamon" : false,
 	"maxDependancyInstallTime" : 0,
-	"changelog" : "",
-	"documentation" : "https://benoit5672.github.io/plugin-magictrigger",
+	"changelog" : "https://benoit5672.github.io/plugin-magictrigger/#language#/changelog",
+	"documentation" : "https://benoit5672.github.io/plugin-magictrigger/#language#",
 	"link" : {
 		"forum":"https://community.jeedom.com/tags/plugin-magictrigger",
 		"video" : ""
