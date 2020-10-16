@@ -4,7 +4,7 @@
 	"description" : "Plugin permettant de collecter des evenements, et de prevoir de maniere statistiques les chances d'apparence de ces evenements pour declenchers des actions.",
 	"licence" : "AGPL",
 	"author" : "benoit5672",
-	"require" : "4.0.0",
+	"require" : "3.3",
 	"version" : "1.0.0",
 	"category" : "organization",
 	"hasDependency" : false,
