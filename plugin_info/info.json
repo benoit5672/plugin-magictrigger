@@ -11,7 +11,7 @@
 	"hasOwnDeamon" : false,
 	"maxDependancyInstallTime" : 0,
 	"changelog" : "",
-	"documentation" : "/docs/index.html",
+	"documentation" : "https://benoit5672.github.io/plugin-magictrigger",
 	"link" : {
 		"forum":"https://community.jeedom.com/tags/plugin-magictrigger",
 		"video" : ""
