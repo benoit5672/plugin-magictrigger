@@ -11,7 +11,7 @@ facile de collecter les evenements sur la semaine complete, le week-end,
 les jours de travail, le lundi seulement, ...
 Il est egalement facile d'exclure la collecte d'evenements les jours feries
 et les jours de vacances, ou d'appliquer des filtres complexes a l'aide 
-d'expression jeedom.
+d'une expression jeedom.
 
 Le but etant d'avoir un maximum de "regularite" dans la collecte des evenements, 
 pour maximiser la probabilite que l'evenement se produise dans les memes 
@@ -41,7 +41,7 @@ Il n'y a pas de configuration particuliere a faire sur le plugin.
 # Configuration de l'équipement
 
 Le plugin se trouve dans le menu Plugins > Organisation.
-Après avoir créé un nouvequipement, vous devez imperativement rlir
+Après avoir créé un nouvel equipement, vous devez imperativement remplir
 les differentes sections de configuration du plugin.
 
 Il y a trois sections distinctes afin de configurer le plugin:
@@ -92,7 +92,7 @@ La periode d'apprentissage correspond a la periode pendant laquelle aucune
 action ne sera declenchee. Durant cette periode, uniquement la collecte 
 d'evenement sera active. Des que la periode d'apprentissage est terminee, 
 le plugin sera en mesure d'executer les actions des que les valeurs seuils 
-sont atteintes.
+sont atteintes.La periode d'apprentissage est exprimee en semaines.
 
 ## RAZ apprentissage
 
@@ -167,7 +167,7 @@ surveiller, ainsi que les actions a declencher en fonction de seuils.
 
 Ce sont les evenements a surveiller. Des que la valeur de l'object change, 
 alors la condition est evaluee. Si la reponse est positive, alors l'evenement
-est stockee en base de donnees. 
+est stocke en base de donnees. 
 
 ### Condition
 
@@ -175,7 +175,7 @@ La condition qui va determiner si l'evenement doit etre pris en compte et etre
 utilise par le plugin, ou tout simplement ignore.
 
 La condition peut etre complexe, et utiliser des operateurs logiques (et, ou)
-pour combiner differentes evaluation.
+pour combiner differentes evaluations.
 
 Le resultat de l'evaluation doit etre de type 'boolean' (vrai ou faux). Vous
 pouvez utiliser le bouton 'Expression' afin de tester le resultat de votre
@@ -191,7 +191,7 @@ Par exemple, si vous avez cocher 'lundi' de 15:00 a 16:45, alors sera ajouter
 
 ### Actions
 
-Les actions sont evaluees en fonction de la 'periodicite' defini dans la 
+Les actions sont evaluees en fonction de la 'periodicite' definie dans la 
 section 'Equipement'.
 
 Quand la statistique de l'intervalle pour le decalage temporel a ete calculee,
