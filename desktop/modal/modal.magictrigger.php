@@ -81,10 +81,6 @@ if (!isConnect('admin')) {
 var cmd_id = <?php echo $_GET['cmd_id']; ?>;
 
 function removeMessage() {
-    //var message = $('#div_message'); 
-    //while(message.firstChild) {
-    //    message.removeChild(message.lastChild);
-    //} 
     $('#div_message').find('center').remove();
 }
 
@@ -241,9 +237,7 @@ $('#period').on('change', function () {
 	var period   = parseInt($(this).find('option:selected').val());
 	var interval = parseInt($('#interval').find('option:selected').val());
     removeMessage();
-    console.log('Change period (period=' + period + ', interval=' + interval);
     if (interval < period) {
-        console.log('error message !');
         $('#div_message').append('<center><span class="label label-danger">{{l"intervalle ne peut pas etre inferieur a la periodicite}}</span></center>');
     }
 });
@@ -252,9 +246,7 @@ $('#interval').on('change', function () {
     var interval = parseInt($(this).find('option:selected').val());
     var period   = parseInt($('#period').find('option:selected').val());
     removeMessage();
-    console.log('Change interval (period=' + period + ', interval=' + interval);
     if (interval < period) {
-        console.log('error message !');
         $('#div_message').append('<center><span class="label label-danger">{{l"intervalle ne peut pas etre inferieur a la periodicite}}</span></center>');
     }
 });
