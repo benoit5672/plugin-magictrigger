@@ -11,7 +11,7 @@ facile de collecter les evenements sur la semaine complete, le week-end,
 les jours de travail, le lundi seulement, ...
 Il est egalement facile d'exclure la collecte d'evenements les jours feries
 et les jours de vacances, ou d'appliquer des filtres complexes a l'aide 
-d'expression jeedom.
+d'une expression jeedom.
 
 Le but etant d'avoir un maximum de "regularite" dans la collecte des evenements, 
 pour maximiser la probabilite que l'evenement se produise dans les memes 
@@ -32,6 +32,8 @@ Il y a donc une persistence des evenements en cas de redemarrage de jeedom.
 > de scenario par exemple), si la probabilite que quelqu'un rentre entre 16h30 
 > et 16h45 depasse 60%.
 
+![graph1](../assets/images/widget_graph1.png)
+
 # Installation
 
 Afin d'utiliser le plugin, vous devez le telecharger, l'installer et 
@@ -41,7 +43,7 @@ Il n'y a pas de configuration particuliere a faire sur le plugin.
 # Configuration de l'équipement
 
 Le plugin se trouve dans le menu Plugins > Organisation.
-Après avoir créé un nouvequipement, vous devez imperativement rlir
+Après avoir créé un nouvel equipement, vous devez imperativement remplir
 les differentes sections de configuration du plugin.
 
 Il y a trois sections distinctes afin de configurer le plugin:
@@ -54,7 +56,7 @@ Il y a trois sections distinctes afin de configurer le plugin:
 La section equipement sert a configurer les parametres habituels de jeedom, 
 et egalement les notions de temps du plugin.
 
-![Equipement](/images/equipment.png)
+![Equipement](../assets/images/equipment.png)
 
 ### Periodicite
 
@@ -84,7 +86,7 @@ de place possible.
 Par exemple, avec 2709 evenements collectes et stockes en base de donnees, 
 l'espace necessaire n'est que de 0.13MB.
 
-![DB](/images/DB.png)
+![DB](../assets/images/DB.png)
   
 ### Periode d'apprentissage
 
@@ -92,7 +94,7 @@ La periode d'apprentissage correspond a la periode pendant laquelle aucune
 action ne sera declenchee. Durant cette periode, uniquement la collecte 
 d'evenement sera active. Des que la periode d'apprentissage est terminee, 
 le plugin sera en mesure d'executer les actions des que les valeurs seuils 
-sont atteintes.
+sont atteintes.La periode d'apprentissage est exprimee en semaines.
 
 ## RAZ apprentissage
 
@@ -137,7 +139,7 @@ depend donc de la precision que l'on recherche.
 La section monitoring sert a configurer les jours qui vont etre surveilles, 
 et si besoin d'exclure des periodes (jour ferie ou vacances).
 
-[Monitoring](/images/monitoring.png)
+![Monitoring](../assets/images/monitoring.png)
 
 ### Periode de monitoring
 
@@ -161,13 +163,13 @@ Pour ma part, j'utilise le plugin 'information du jour' de lunarok.
 Dans la section configuration, on va s'attacher a configurer les evenements a 
 surveiller, ainsi que les actions a declencher en fonction de seuils.
 
-[Configuration](/images/configuration.png)
+![Configuration](../assets/images/configuration.png)
 
 ### Declencheurs
 
 Ce sont les evenements a surveiller. Des que la valeur de l'object change, 
 alors la condition est evaluee. Si la reponse est positive, alors l'evenement
-est stockee en base de donnees. 
+est stocke en base de donnees. 
 
 ### Condition
 
@@ -175,7 +177,7 @@ La condition qui va determiner si l'evenement doit etre pris en compte et etre
 utilise par le plugin, ou tout simplement ignore.
 
 La condition peut etre complexe, et utiliser des operateurs logiques (et, ou)
-pour combiner differentes evaluation.
+pour combiner differentes evaluations.
 
 Le resultat de l'evaluation doit etre de type 'boolean' (vrai ou faux). Vous
 pouvez utiliser le bouton 'Expression' afin de tester le resultat de votre
@@ -191,7 +193,7 @@ Par exemple, si vous avez cocher 'lundi' de 15:00 a 16:45, alors sera ajouter
 
 ### Actions
 
-Les actions sont evaluees en fonction de la 'periodicite' defini dans la 
+Les actions sont evaluees en fonction de la 'periodicite' definie dans la 
 section 'Equipement'.
 
 Quand la statistique de l'intervalle pour le decalage temporel a ete calculee,
@@ -210,8 +212,30 @@ seuil sera utilise.
 
 # Le widget
 
-Le widget sera celui par défaut du core avec l'affichage par défaut des commandes
-deprendra la configuration de celles-ci.
+Le widget sera celui par défaut du core. Pour l'affichage des commamdes, l'affichage 
+par défaut est utilise pour la version 'mobile'. Pour la version 'dashboard' un widget 
+specifique a ete cree.
+
+![widget](../assets/images/widget.png)
+
+En cliquant sur une commande (par exemple 'lundi'), une fenetre modal est affichee. 
+
+En cliquant sur 'graphe' vous pouvez vous rendre compte des statistiques en fonction des 
+parametres qui ont ete configure sur l'equipement. 
+
+![graph1](../assets/images/widget_graph1.png)
+
+2 lignes rouges sont affichees, et representent le seuil minimum et le seuil maximum configures.
+Si les colonnes noires ne depassent pas le seuil minimum, alors aucune action ne sera declenchee.
+Libre a vous d'ajuster la valeur minimum du seuil pour declencher une action.
+
+Vous pouvez egalement modifie la periodicite et l'intervalle pour vous rendre compte de l'impact
+sur les probabilites, en se basant sur les meme evenements.
+
+Par exemple, en gardant la meme periodicite (5 minutes), mais en changeant l'intervalle (donc la 
+marge d'erreur) de 15 minutes a 30 minutes, on obtient le graphe suivant:
+
+![graph2](../assets/images/widget_graph2.png)
 
 # Changelog
 
