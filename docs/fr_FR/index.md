@@ -32,6 +32,8 @@ Il y a donc une persistence des evenements en cas de redemarrage de jeedom.
 > de scenario par exemple), si la probabilite que quelqu'un rentre entre 16h30 
 > et 16h45 depasse 60%.
 
+[graph1](/images/widget_graph1.png)
+
 # Installation
 
 Afin d'utiliser le plugin, vous devez le telecharger, l'installer et 
