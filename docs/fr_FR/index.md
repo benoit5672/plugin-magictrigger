@@ -210,8 +210,30 @@ seuil sera utilise.
 
 # Le widget
 
-Le widget sera celui par défaut du core avec l'affichage par défaut des commandes
-deprendra la configuration de celles-ci.
+Le widget sera celui par défaut du core. Pour l'affichage des commamdes, l'affichage 
+par défaut est utilise pour la version 'mobile'. Pour la version 'dashboard' un widget 
+specifique a ete cree.
+
+[widget](/images/widget.png)
+
+En cliquant sur une commande (par exemple 'lundi'), une fenetre modal est affichee. 
+
+En cliquant sur 'graphe' vous pouvez vous rendre compte des statistiques en fonction des 
+parametres qui ont ete configure sur l'equipement. 
+
+[widget](/images/widget_graph1.png)
+
+2 lignes rouges sont affichees, et representent le seuil minimum et le seuil maximum configures.
+Si les colonnes noires ne depassent pas le seuil minimum, alors aucune action ne sera declenchee.
+Libre a vous d'ajuster la valeur minimum du seuil pour declencher une action.
+
+Vous pouvez egalement modifie la periodicite et l'intervalle pour vous rendre compte de l'impact
+sur les probabilites, en se basant sur les meme evenements.
+
+Par exemple, en gardant la meme periodicite (5 minutes), mais en changeant l'intervalle (donc la 
+marge d'erreur) de 15 minutes a 30 minutes, on obtient le graphe suivant:
+
+[widget](/images/widget_graph1.png)
 
 # Changelog
 
