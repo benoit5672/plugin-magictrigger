@@ -32,7 +32,7 @@ Il y a donc une persistence des evenements en cas de redemarrage de jeedom.
 > de scenario par exemple), si la probabilite que quelqu'un rentre entre 16h30 
 > et 16h45 depasse 60%.
 
-![graph1](/images/widget_graph1.png)
+![graph1](../assets/images/widget_graph1.png)
 
 # Installation
 
@@ -56,7 +56,7 @@ Il y a trois sections distinctes afin de configurer le plugin:
 La section equipement sert a configurer les parametres habituels de jeedom, 
 et egalement les notions de temps du plugin.
 
-![Equipement](/assets/images/equipment.png)
+![Equipement](../assets/images/equipment.png)
 
 ### Periodicite
 
@@ -239,7 +239,7 @@ marge d'erreur) de 15 minutes a 30 minutes, on obtient le graphe suivant:
 
 # Changelog
 
-![Voir le changelog](./changelog)
+[Voir le changelog](./changelog)
 
 # Support
 
