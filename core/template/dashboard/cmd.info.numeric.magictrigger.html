@@ -1,0 +1,132 @@
+<div class="cmd cmd-widget magictrigger" data-type="info" data-subtype="numeric" data-template="default" data-cmd_id="#id#" data-cmd_uid="#uid#" data-version="#version#" data-eqLogic_id="#eqLogic_id#" title="Date de valeur : #valueDate#<br/>Date de collecte : #collectDate#" >
+<div class="title #hide_name#">
+  <span class="cmdName">#name_display#</span>
+</div>
+<div class="content-sm">
+  <div class="graph cursor" data-cmd_id="#id#"></div>
+</div>
+<script>
+$('.cmd[data-cmd_uid=#uid#] .graph').on('click', function(){
+  	$("#md_modal").load('index.php?v=d&plugin=magictrigger&modal=modal.magictrigger&cmd_id=#id#').dialog('open');
+});  
+
+jeedom.cmd.update['#id#'] = function(_options) {
+	$('.cmd[data-cmd_id=#id#]').attr('title','Date de valeur : '+_options.valueDate+'<br/>Date de collecte : '+_options.collectDate)
+    $('.cmd[data-cmd_uid=#uid#] .graph').highcharts().series[0].points[0].update(_options.display_value)
+}
+
+if (is_numeric('#state#')) {
+    // Initialize values
+    var categories = [];
+    var series     = [];
+    var period     = -1;
+  
+    // Fetch the data using AJAX call
+    $.ajax({
+        type: "POST",
+        url: "plugins/magictrigger/core/ajax/magictrigger.ajax.php",
+        data: {
+            action  : "getStatistics",
+            id      : #id#,
+            dow     : -1,
+            period  : 0,
+            interval: 0,
+        },
+        dataType: 'json',
+        global: true,
+        async: false,
+        error: function (request, status, error) {
+             handleAjaxError(request, status, error);
+        },
+        success: function (data) {
+            //console.log(data);
+            if (data.state == 'ok') {
+                var points = data.result['points'];
+                period        = data.result['period'];
+                for (i = 0; i < points.length; i++) {
+                    categories.push(points[i]['time']);
+                    series.push(points[i]['value']);
+                }
+            }
+        },
+      });
+
+    // Now we have the data, then, draw the graph
+    if (series.length > 0) {
+        //console.log('print series : height=#height#, witdh=#width#');
+        var tickInterval = parseInt(60 / period);
+        $('.cmd[data-cmd_uid=#uid#] .graph').empty().highcharts({
+            chart: {
+                style: {
+                  fontFamily: 'Roboto'
+                },
+                height: ('#height#' != '#' + 'height#') ? '#height#' : 50, 
+                width: ('#width#' != '#' + 'width#') ? '#width#' : 250,
+                type: 'column',
+                plotBackgroundColor: null,
+                plotBackgroundImage: null,
+                backgroundColor: null,
+                plotBorderWidth: 0,
+                plotShadow: false,
+                spacingTop: 0,
+                spacingLeft: 1,
+                spacingRight: 1,
+                spacingBottom: 1,
+                borderWidth : 0,
+                showAxes: false,
+            },
+            title: {
+                text: '',
+                margin: 0,
+            },
+            xAxis: {
+                categories: categories,
+                labels: {
+                   enabled: false,
+                },
+                tickInterval: tickInterval,
+              
+            },
+            plotOptions: {
+                series: {
+                   marker: {
+                      enabled: false
+                   }
+                }
+            },
+            yAxis: {
+                min: 0, 
+                max: 100,
+                labels: {
+                   enabled: false,
+                },
+                title: { 
+                    text: '', 
+                }, 
+                allowDecimals: false,
+            },
+            legend: { 
+                enabled: false 
+            },
+            data: {
+                enablePolling: false,
+             },
+             series: [
+             {
+                name: '{{Probabilite}}',
+                data: series,
+             }],
+             credits: {
+                enabled: false,
+             },
+             exporting : {
+                enabled: false
+             },
+        });
+    } else {
+        $('.cmd[data-cmd_uid=#uid#] .graph').append('<center><span class="label label-danger">{{Pas de donnees}}</span></center>')
+    } } else {
+	$('.cmd[data-cmd_uid=#uid#] .graph').append('<center><span class="label label-danger">#state#</span></center>')
+}
+</script>
+</div>
