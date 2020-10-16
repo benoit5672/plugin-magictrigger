@@ -429,6 +429,7 @@ class magictrigger extends eqLogic {
 			    $cmd->setName(__('total ' . ucfirst($day), __FILE__));
 			    $cmd->setType('info');
 			    $cmd->setSubType('numeric');
+                $cmd->setTemplate('dashboard', 'magictrigger');
 			    $cmd->setEqLogic_id($this->getId());
                 $cmd->setOrder($order++);
 			    $cmd->save();
@@ -924,7 +925,7 @@ class magictriggerCmd extends cmd {
         return $result;
     }
 
-
+/**
     public function toHtml($_version = 'dashboard', $_options = '') {
                                 $_version = jeedom::versionAlias($_version);
        $html = '';
@@ -999,6 +1000,7 @@ class magictriggerCmd extends cmd {
             return translate::exec(template_replace($replace, $template), 'core/template/widgets.html');
         }
     }
+     */
 
 }
 
