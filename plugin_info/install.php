@@ -19,11 +19,11 @@ require_once dirname(__FILE__) . '/../../../core/php/core.inc.php';
 
 function magictrigger_install() {
     // Create the table where the triggers are stored
-    $sql = 'CREATE TABLE IF NOT EXISTS `magictriggerDB` ('; 
-           . '`added` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,';
-           . '`magicId` INT(11) NOT NULL,';
-           . '`dow` TINYINT(1) UNSIGNED NOT NULL,';
-           . '`time` MEDIUMINT(4) UNSIGNED NOT NULL';
+    $sql = 'CREATE TABLE IF NOT EXISTS `magictriggerDB` ('
+           . '`added` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,'
+           . '`magicId` INT(11) NOT NULL,'
+           . '`dow` TINYINT(1) UNSIGNED NOT NULL,'
+           . '`time` MEDIUMINT(4) UNSIGNED NOT NULL'
            . ') ENGINE=InnoDB DEFAULT CHARSET=utf8;';
     DB::Prepare($sql, array(), DB::FETCH_TYPE_ROW);
 
