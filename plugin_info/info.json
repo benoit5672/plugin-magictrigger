@@ -5,7 +5,7 @@
 	"licence" : "AGPL",
 	"author" : "benoit5672",
 	"require" : "3.3",
-	"version" : "1.0.0",
+	"version" : "1.0.1",
 	"category" : "organization",
 	"hasDependency" : false,
 	"hasOwnDeamon" : false,
