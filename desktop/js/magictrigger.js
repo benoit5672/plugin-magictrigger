@@ -461,3 +461,8 @@ $("a[href='#eqlogictab']").on('show.bs.tab', function(e) {
     // When the tab is displayed, refresh the remaining value
     setRemaining();
 });
+
+// ---- Thanks @mips: open documentation or community links from the desktop
+$('.pluginAction[data-action=openLocation]').on('click',function(){
+    window.open($(this).attr("data-location"), "_blank", null);
+});
